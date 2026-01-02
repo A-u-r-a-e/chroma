@@ -1,0 +1,127 @@
+#pragma once
+#include "api.h"
+#include "chromatic/core.hpp"
+#include "chromatic/shorthands.hpp"
+
+namespace chromatic {
+
+    struct Differential {
+    protected:
+        double max_motor_rpm;
+        double inch_mvolts;
+        double max_speed;
+
+        inline double max_speed_ratio(double left, double right) {
+            return (safety_limiter * max_speed) / std::max(fabs(left), fabs(right));
+        }
+    public:
+
+        const pros::MotorGroup &left_mg;
+        const pros::MotorGroup &right_mg;
+        const double wheel_radius;
+        const double motor_wheel_ratio;
+        const double track_width;
+        const double safety_limiter;
+
+        /**
+         * @brief Construct a new Differential object
+         *
+         * @param left_mg reference to left motor groups. all drivetrain motors must have the same cartridge
+         * @param right_mg reference to left motor groups. all drivetrain motors must have the same cartridge
+         * @param wheel_radius wheel radius in inches
+         * @param gear_ratio motor gear divided by wheel gear
+         * @param track_width distance between the centers of the two wheel groups
+         * @param safety_limiter proportion of max speed to use (good for stability purposes). less than or equal to 1.0
+         */
+        Differential(
+            pros::MotorGroup &left_mg, pros::MotorGroup &right_mg, double wheel_radius, double gear_ratio, double track_width, double safety_limiter = 1.0):
+            left_mg(left_mg), right_mg(right_mg), wheel_radius(wheel_radius), motor_wheel_ratio(gear_ratio), track_width(track_width),  safety_limiter(safety_limiter)
+        {
+            switch (left_mg.get_gearing()) {
+                case pros::MotorGears::red: max_motor_rpm = 100; break;
+                case pros::MotorGears::green: max_motor_rpm = 200; break;
+                case pros::MotorGears::blue: max_motor_rpm = 600; break;
+            }
+
+            max_speed = max_motor_rpm * (1.0 / motor_wheel_ratio) * (2 * PI * wheel_radius) * (1.0 / 60);
+
+            inch_mvolts = 12000.0 / max_speed;
+        }
+
+        // stop the robot with coast, but can brake if parameter is provided
+        void brake(bool force = false) {
+            auto lbrake = left_mg.get_brake_mode_all();
+            auto rbrake = right_mg.get_brake_mode_all();
+            left_mg.set_brake_mode_all(force ? BRAKE : COAST);
+            right_mg.set_brake_mode_all(force ? BRAKE: COAST);
+            left_mg.brake();
+            right_mg.brake();
+            for (int lmb = 0; lmb < lbrake.size(); lmb++) left_mg.set_brake_mode(lbrake[lmb], lmb);
+            for (int rmb = 0; rmb < rbrake.size(); rmb++) right_mg.set_brake_mode(lbrake[rmb], rmb);
+        }
+
+        // this prioritizes fwd over turn [-127, 127], turn is right
+        void arcade_drive(double fwd, double turn) {
+            left_mg.move(fwd + turn);
+            right_mg.move(fwd - turn);
+        }
+
+        // deals in inches/second, this prioritizes turn over fwd, turn is right
+        void velocity_drive(double fwd, double turn) {
+            double left_cmd = fwd + turn, right_cmd = fwd - turn;
+            double ratio = max_speed_ratio(left_cmd, right_cmd);
+
+            if (ratio < 1.0) {
+                left_cmd *= ratio;
+                right_cmd *= ratio;
+            }
+
+            left_mg.move_voltage(inch_mvolts * left_cmd);
+            right_mg.move_voltage(inch_mvolts * right_cmd);
+        }
+
+        // deals in inches/second, this does inverse kinematics for linear and angular velocity, turn is left
+        void move_velocities(double linear, double angular, bool respect_max_speed = false) {
+            /*
+            We know that Arc Length s = theta * radius
+            Therefore, Radius, R = s / theta
+
+            We can find the equivalent for angular and linear velocity
+            Let s(t) and theta(t),
+
+            ds/dt = dtheta/dt * radius
+            v = w * radius
+
+            Therefore, R = v / w.
+
+            If we are turning to the left, the left side is closer to the center of the turning circle
+            Therefore, R_left = R - D / 2, where D is the cross track width, and R_right = R + D / 2
+
+            Since we are given both v and w (linear, angular),
+            We can find the differential velocities for left and right motor groups, using v = w * radius
+
+            Intuitively, we can imagine this in the arc length form,
+            Understand it as finding the arc length of each motor group when they travel alongst this circle
+
+            Therefore, v_left = w * (R - D / 2) and v_right = w * (R + D / 2).
+
+            As R = linear/angular, or v / w, we can expand and simplify these expressions to:
+            v_left = v - w * D / 2, v_right = v + w * D / 2
+
+            */
+
+            double v_left = linear - angular * track_width / 2;
+            double v_right = linear + angular * track_width / 2;
+
+            double ratio = max_speed_ratio(v_left,  v_right);
+
+            if (respect_max_speed && ratio < 1.0) {
+                v_left *= ratio;
+                v_right *= ratio;
+            }
+
+            left_mg.move_voltage(inch_mvolts * v_left);
+            right_mg.move_voltage(inch_mvolts * v_right);
+        }
+    };
+}

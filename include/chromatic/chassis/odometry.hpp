@@ -75,7 +75,6 @@ namespace chromatic {
         ms last_time;
     public:
 
-
         EncodersIMU(
             Differential &drivetrain, pros::IMU &inertial, double ticks_per_rotation):
             drivetrain(drivetrain), inertial(inertial), ticks_per_rotation(ticks_per_rotation)
@@ -126,4 +125,5 @@ namespace chromatic {
             }
         }
     };
+
 }

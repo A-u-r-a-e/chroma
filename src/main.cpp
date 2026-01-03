@@ -1,6 +1,7 @@
 #include "main.h"
 #include "chromatic/chassis/odometry.hpp"
 #include "hardware.h"
+#include "pros/motor_group.hpp"
 
 using namespace chromatic;
 

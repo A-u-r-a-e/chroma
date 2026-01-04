@@ -5,7 +5,7 @@
 namespace chromatic {
 
     // {%} Trig Helpers
-    
+
     /**
      * @brief sinx/x with LIMIT
      *
@@ -27,18 +27,18 @@ namespace chromatic {
 
     /**
      * @brief Conversion from radians to degrees
-     * 
+     *
      * @param radians radians value
-     * @return double 
+     * @return double
      */
     inline double to_deg(double radians) {
         return radians * (180 / PI);
     }
     /**
      * @brief Conversion from degrees to radians
-     * 
+     *
      * @param degrees degrees value
-     * @return double 
+     * @return double
      */
     inline double to_rad(double degrees) {
         return degrees * (PI / 180);
@@ -46,7 +46,7 @@ namespace chromatic {
 
     /**
      * @brief Convert from a turn to a heading
-     * 
+     *
      * @param turn [-pi or 180, pi or 180]
      * @param radians is this in radians or not
      * @return double [0, 2pi or 360]
@@ -57,7 +57,7 @@ namespace chromatic {
     }
     /**
      * @brief Convert from a heading to a turn
-     * 
+     *
      * @param turn [0, 2pi or 360]
      * @param radians is this in radians or not
      * @return double [-pi or 180, pi or 180]
@@ -82,11 +82,12 @@ namespace chromatic {
 
     /**
      * @brief Find the turning angle needed to achieve end from start. Radians only.
-     * 
+     * @note assumes ccw radians
+     *
      * @param start Initial radians
      * @param end Final Radians
      * @param way Turning Direction, blank for EITHER/optimal
-     * @return double 
+     * @return double
      */
     inline double calculate_turn(double start, double end, DIR way = DIR::EITHER) {
         switch (way) {
@@ -105,15 +106,15 @@ namespace chromatic {
 
     /**
      * @brief Find the sign (including zeros) of a number
-     * 
+     *
      * @param value the number
-     * @return SIGN 
+     * @return SIGN
      */
     inline SIGN as_SIGN(double value) {
         if (value == 0) return SIGN::ZERO;
         return (value > 0 ? SIGN::POSITIVE : SIGN::NEGATIVE);
     }
-    
+
     /**
      * @brief average of a vector of doubles
      *
@@ -142,15 +143,15 @@ namespace chromatic {
      * @return false
      */
     inline bool signflip(double pre, double post) {
-        return SIGN(pre) != SIGN(post);
+        return pre * post < 0;
     }
 
     /**
      * @brief Use for denominators that may be zero
-     * 
+     *
      * @param x the denom
      * @return double the safe denom that isn't zero
-     * 
+     *
      * @note this is a lie this is quadratic smooth relu
      */
     inline double nozero(double x) {

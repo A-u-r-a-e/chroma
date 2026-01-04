@@ -46,13 +46,13 @@ namespace chromatic {
             return;
         }
 
-        // get odometry state (pose and velocities) readings
+        // get odometry state (pose and velocities) readings, angle is ccw
         PoseV get_posev() const {
             auto posev = cur_posev.lock()->posev();
             return posev;
         }
 
-        // get odometry pose readings
+        // get odometry pose readings, angle is ccw
         Pose get_pose() const {
             auto pose = cur_posev.lock()->pose();
             return pose;
@@ -87,8 +87,8 @@ namespace chromatic {
             set_pose(init);
             last_ang = get_imu_rad(inertial);
             last_lin = (2 * PI * drivetrain.wheel_radius) *
-            (average(drivetrain.left_mg.get_position_all()) + average(drivetrain.right_mg.get_position_all()))/(2 * ticks_per_rotation);
-            last_time = -1;
+                (average(drivetrain.left_mg.get_position_all()) + average(drivetrain.right_mg.get_position_all()))/(2 * ticks_per_rotation);
+            last_time = now();
         }
 
         // calculate pose
@@ -110,15 +110,15 @@ namespace chromatic {
                 double ang = get_imu_rad(inertial);
                 double lin = (2 * PI * drivetrain.wheel_radius) *
                 (average(drivetrain.left_mg.get_position_all()) + average(drivetrain.right_mg.get_position_all()))/(2 * ticks_per_rotation);
-                double dt = now()-last_time;
+                double dt = now() - last_time;
 
-                if (last_time < 0) dt = 0;
+                if (dt > 0) {
+                    compute(lin - last_lin, ang - last_ang, dt);
 
-                compute(lin - last_lin, ang - last_ang, dt);
-
-                last_ang = ang;
-                last_lin = lin;
-                last_time = now();
+                    last_ang = ang;
+                    last_lin = lin;
+                    last_time = now();
+                }
 
 
                 delay_for(poll_delay);

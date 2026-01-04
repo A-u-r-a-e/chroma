@@ -9,18 +9,32 @@ namespace chromatic {
         const ms settle_duration;
 
         ms settling_since;
+        ms last_update;
         bool settling;
     public:
 
-        SettleCondition(double settle_range, ms settle_duration) : settle_range(settle_range), settle_duration(settle_duration) {
+        // settle condition
+        SettleCondition(
+            double settle_range, ms settle_duration
+        ):
+            settle_range(settle_range), settle_duration(settle_duration)
+        {
+            last_update = now();
             settling_since = INT32_MAX;
             settling = false;
         }
 
-        inline bool operator()() {
-            return (settling && now() - settling_since >= settle_duration);
+        // evaluate if settled (based on updates and stuff)
+        inline bool operator()() const {
+            return (settling && last_update - settling_since >= settle_duration);
         }
 
+        // gets if the error was in range last update
+        inline bool get_settling() const {
+            return settling;
+        }
+
+        // update the settle condition with a error and an optionally provided time
         inline void update(double error, ms cur_time = now()) {
             bool in_range = fabs(error) < settle_range;
 
@@ -28,11 +42,14 @@ namespace chromatic {
             if (!in_range) settling_since = INT32_MAX;
 
             settling = in_range;
+            last_update = cur_time;
         }
 
+        // reset the settle condition for a new motion
         inline void reset() {
             settling_since = INT32_MAX;
             settling = false;
+            last_update = now();
         }
     };
 }

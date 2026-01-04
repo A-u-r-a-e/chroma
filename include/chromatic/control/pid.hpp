@@ -8,8 +8,9 @@ namespace chromatic {
     struct PID {
     private:
         const double kP, kI, kD, integral_range; //  PID coefficients and the start_integral range
-        const ms failsafe; // max time elapsed before done = true, note that this does not affect compute output
         const double max_accum, max_damp, max_output; // maximum integral/dampening/total output value contribution
+
+        ms timeout; // timeout that can be set on demand, is default disabled with -1, max time elapsed before done = true, this does not affect compute
 
         SettleCondition sc_tight, sc_loose; // tight and loose settle conditions, note that this does not affect compute output
 
@@ -20,28 +21,49 @@ namespace chromatic {
 
     public:
 
+        // pid constants, with two settle conditions
         PID(
             double kP, double kI, double kD, double integral_range,
-            SettleCondition sc_tight, SettleCondition sc_loose, ms failsafe,
+            SettleCondition sc_tight, SettleCondition sc_loose,
             double max_accum, double max_damp, double max_output
         ):
             kP{kP}, kI{kI}, kD{kD}, integral_range{integral_range},
-            sc_tight{sc_tight}, sc_loose{sc_loose}, failsafe{failsafe},
+            sc_tight{sc_tight}, sc_loose{sc_loose},
             max_accum{max_accum}, max_damp{max_damp}, max_output{max_output}
         {
             prev_error = 0;
             prev_time = now();
+            timeout = -1;
             reset();
         }
 
-        inline bool settled() {
+        // checks if the pid is settled in either loose or tight
+        inline bool settled() const {
             return (sc_loose() || sc_tight());
         }
 
-        inline bool done() {
-            return (sum_time >= failsafe || settled());
+        // checks if the pid has either settled or timed out (if set)
+        inline bool done() const {
+            bool failsafe_activated = (timeout >= 0 && sum_time >= timeout);
+            return (failsafe_activated || settled());
         }
 
+        // gets the loose settle condition object
+        inline SettleCondition get_loose_sc() const {
+            return sc_loose;
+        }
+
+        // gets the tight settle condition object
+        inline SettleCondition get_tight_sc() const {
+            return sc_tight;
+        }
+
+        // set to -1 to disable timeout (ms)
+        inline void set_timeout(ms timeout) {
+            this->timeout = timeout;
+        }
+
+        // reset the pid for a new motion or target
         inline void reset() {
             sum_error = 0;
             sum_time = 0;
@@ -49,16 +71,19 @@ namespace chromatic {
             sc_tight.reset();
             overshot = false;
             fresh = true;
+            // do not reset prev_s because that is pointless and only creates more garbage values (reset() != ready())
         }
 
+        // computes pid output, note that this does not work for moving targets
         inline double compute(double error) {
-            ms this_time = now();
-            ms dt = this_time - prev_time;
             if (fresh) {
                 prev_error = error;
-                prev_time = this_time;
+                prev_time = now();
             }
             fresh = false;
+
+            ms this_time = now();
+            ms dt = this_time - prev_time;
 
             sc_loose.update(error, this_time);
             sc_tight.update(error, this_time);

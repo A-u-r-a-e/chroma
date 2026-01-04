@@ -12,7 +12,9 @@ namespace chromatic {
         double max_speed;
 
         inline double max_speed_ratio(double left, double right) {
-            return (safety_limiter * max_speed) / std::max(fabs(left), fabs(right));
+            double max_scalar = std::max(fabs(left), fabs(right));
+            if (max_scalar == 0) return 1.0;
+            return (safety_limiter * max_speed) / max_scalar;
         }
     public:
 
@@ -57,18 +59,20 @@ namespace chromatic {
             left_mg.brake();
             right_mg.brake();
             for (int lmb = 0; lmb < lbrake.size(); lmb++) left_mg.set_brake_mode(lbrake[lmb], lmb);
-            for (int rmb = 0; rmb < rbrake.size(); rmb++) right_mg.set_brake_mode(lbrake[rmb], rmb);
+            for (int rmb = 0; rmb < rbrake.size(); rmb++) right_mg.set_brake_mode(rbrake[rmb], rmb);
         }
 
-        // this prioritizes fwd over turn [-127, 127], turn is right
+        // this prioritizes fwd over turn [-127, 127], turn is right (cw)
+        // good for opcontrol
         void arcade_drive(double fwd, double turn) {
             left_mg.move(fwd + turn);
             right_mg.move(fwd - turn);
         }
 
-        // deals in inches/second, this prioritizes turn over fwd, turn is right
-        void velocity_drive(double fwd, double turn) {
-            double left_cmd = fwd + turn, right_cmd = fwd - turn;
+        // deals in inches/second, this prioritizes turn over fwd, turn is left (ccw)
+        // heuristic control, good for non-motion-profile auton
+        void command_heuristic(double fwd, double turn) {
+            double left_cmd = fwd - turn, right_cmd = fwd + turn;
             double ratio = max_speed_ratio(left_cmd, right_cmd);
 
             if (ratio < 1.0) {
@@ -80,34 +84,34 @@ namespace chromatic {
             right_mg.move_voltage(inch_mvolts * right_cmd);
         }
 
-        // deals in inches/second, this does inverse kinematics for linear and angular velocity, turn is left
-        void move_velocities(double linear, double angular, bool respect_max_speed = false) {
+        // deals in inches/second, this does inverse kinematics for linear and angular velocity, turn is left (ccw)
+        // good for autonomous with velocity profiling, as this (tries to) actuate to motion profiled velocities
+        void command_velocities(double linear, double angular, bool respect_max_speed = false) {
             /*
-            We know that Arc Length s = theta * radius
-            Therefore, Radius, R = s / theta
+                We know that Arc Length s = theta * radius
+                Therefore, Radius, R = s / theta
 
-            We can find the equivalent for angular and linear velocity
-            Let s(t) and theta(t),
+                We can find the equivalent for angular and linear velocity
+                Let s(t) and theta(t),
 
-            ds/dt = dtheta/dt * radius
-            v = w * radius
+                ds/dt = dtheta/dt * radius
+                v = w * radius
 
-            Therefore, R = v / w.
+                Therefore, R = v / w.
 
-            If we are turning to the left, the left side is closer to the center of the turning circle
-            Therefore, R_left = R - D / 2, where D is the cross track width, and R_right = R + D / 2
+                If we are turning to the left, the left side is closer to the center of the turning circle
+                Therefore, R_left = R - D / 2, where D is the cross track width, and R_right = R + D / 2
 
-            Since we are given both v and w (linear, angular),
-            We can find the differential velocities for left and right motor groups, using v = w * radius
+                Since we are given both v and w (linear, angular),
+                We can find the differential velocities for left and right motor groups, using v = w * radius
 
-            Intuitively, we can imagine this in the arc length form,
-            Understand it as finding the arc length of each motor group when they travel alongst this circle
+                Intuitively, we can imagine this in the arc length form,
+                Understand it as finding the arc length of each motor group when they travel alongst this circle
 
-            Therefore, v_left = w * (R - D / 2) and v_right = w * (R + D / 2).
+                Therefore, v_left = w * (R - D / 2) and v_right = w * (R + D / 2).
 
-            As R = linear/angular, or v / w, we can expand and simplify these expressions to:
-            v_left = v - w * D / 2, v_right = v + w * D / 2
-
+                As R = linear/angular, or v / w, we can expand and simplify these expressions to:
+                v_left = v - w * D / 2, v_right = v + w * D / 2
             */
 
             double v_left = linear - angular * track_width / 2;

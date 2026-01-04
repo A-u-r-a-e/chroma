@@ -5,47 +5,52 @@ namespace chromatic {
     struct Pose {
         Vec pos;
         double dir;
-        /**
-         * @brief Pose is a instaneous snapshot of the position of a robot's state
-         *
-         * @param pos location
-         * @param dir facing direction
-         */
-        Pose(Vec pos, double dir) : pos{pos}, dir{dir} {}
 
-        /**
-         * @brief Return itself
-         *
-         * @return Pose
-         */
-        inline Pose pose() const {return *this;}
+        // a pose based on position and direction
+        Pose(
+            Vec pos, double dir
+        ):
+            pos{pos}, dir{dir}
+        {}
+
+        // gets itself
+        inline Pose pose() const {
+            return *this;
+        }
+
+        // raycast a pose using its direction by some amount
+        static inline Pose project(const Pose& source, double amount) {
+            Pose result = Pose(source.pos + Vec::Polar(source.dir, amount), source.dir);
+            return result;
+        }
     };
 
     struct PoseV : public Pose {
         Vec vel;
         double turn;
-        /**
-         * @brief PoseV is the extension of Pose to feature velocities as well
-         *
-         * @param pos location
-         * @param dir facing direction
-         * @param vel rate of change in location
-         * @param turn rate of change in direction
-         */
-        PoseV(Vec pos, double dir, Vec vel, double turn) : Pose{pos, dir}, vel{vel}, turn{turn} {}
 
-        /**
-         * @brief Reduce to a Pose
-         *
-         * @return Pose
-         */
-        inline Pose pose() const {return Pose{pos, dir};}
+        // pose but with velocities of both rotational and translational
+        PoseV(
+            Vec pos, double dir, Vec vel, double turn
+        ):
+            Pose{pos, dir}, vel{vel}, turn{turn}
+        {}
 
-        /**
-         * @brief Return itself
-         *
-         * @return PoseV
-         */
-        inline PoseV posev() const {return *this;}
+        // gets the pose of a posev
+        inline Pose pose() const {
+            return Pose{pos, dir};
+        }
+
+        // gets itself
+        inline PoseV posev() const {
+            return *this;
+        }
+
+        // gets a poseV from a pose
+        static inline PoseV fromPose(const Pose& pose) {
+            return PoseV(pose.pos, pose.dir, ZeroVec, 0);
+        }
     };
+
+
 }

@@ -4,7 +4,6 @@
 #include "chromatic/core.hpp"
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
-#include <tuple>
 
 namespace chromatic {
 

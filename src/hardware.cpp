@@ -6,7 +6,6 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-11, -6, 7}, pros::MotorGearset::blue, pros::MotorEncoderUnits::counts);
 pros::MotorGroup right_mg({18, 16, -17}, pros::MotorGearset::blue, pros::MotorEncoderUnits::counts);
 
-
 pros::Motor intake(14);
 pros::Motor storage(15);
 pros::Motor outtake(-20);

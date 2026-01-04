@@ -75,6 +75,7 @@ namespace chromatic {
         ms last_time;
     public:
 
+        // btw ticks per rotation is the encoder ticks of the encoder per full 360º rotation
         EncodersIMU(
             Differential &drivetrain, pros::IMU &inertial, double ticks_per_rotation):
             drivetrain(drivetrain), inertial(inertial), ticks_per_rotation(ticks_per_rotation)

@@ -31,12 +31,33 @@ namespace chromatic {
         }
 
         // if MotionController is active or not
-        bool is_in_motion() {
+        inline bool is_in_motion() {
             return in_motion;
         }
 
-        void interrupt() {
+        // interupt motion
+        inline void interrupt() {
             in_motion = false;
+            drivebase.brake();
+        }
+
+        // command outside motion, this is motor output based
+        inline void override_arcade(double fwd, double turn) {
+            drivebase.arcade_drive(fwd, turn);
+        }
+
+        // command outside motion, this scales fwd to irl speeds
+        inline void override_heuristic(double fwd, double turn) {
+            drivebase.command_heuristic(fwd, turn);
+        }
+
+        // command outside motion, this does reverse kinematics
+        inline void override_velocities(double linear, double angular, bool respect_max_speed = false) {
+            drivebase.command_velocities(linear, angular, respect_max_speed);
+        }
+
+        // brake outside motion
+        inline void override_brake() {
             drivebase.brake();
         }
 

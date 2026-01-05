@@ -4,14 +4,14 @@
 #include "config.h"
 #include "subsystems.h"
 
-void drive_test();
+void drive_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void turn_test();
+void turn_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void left_side();
+void left_side(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void right_side();
+void right_side(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void skills();
+void skills(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void solo_awp();
+void solo_awp(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);

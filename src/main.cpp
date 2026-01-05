@@ -1,4 +1,5 @@
 #include "main.h"
+#include "config.h"
 
 using namespace chromatic;
 
@@ -27,9 +28,9 @@ void autonomous() {
     pros::Task body_task([&]{run_body();});
     pros::Task odom_task([&]{odometry.localize();});
 
-    auton_chassis.set_pollrate(auton_pollrate);
+    chassis.set_pollrate(auton_pollrate);
 
-    drive_test();
+    drive_test(odometry, chassis);
 
     stop_body();
     odometry.stop_loop();
@@ -44,7 +45,7 @@ void opcontrol() {
     master.print(0, 0, "helloooo");
     pros::lcd::print(1, "in opcontrol");
     delay_for(5000);
-    auton_chassis.interrupt();
+    chassis.interrupt();
     stop_body();
     delay_for(50);
 
@@ -56,9 +57,9 @@ void opcontrol() {
 		int turn = master.get_analog(RX);
 
 		if (abs(fwd)+abs(turn) != 0) {
-		    drivebase.arcade_drive(fwd, turn);
+		    chassis.override_arcade(fwd, turn);
 		} else {
-		    drivebase.brake();
+		    chassis.override_brake();
 		}
 
 		if (master.get_digital_new_press(BB)) ear.toggle();

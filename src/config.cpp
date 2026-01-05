@@ -38,4 +38,4 @@ PID turn_pid(
     to_rad(120), to_rad(180), to_rad(360)
 );
 
-MotionController auton_chassis(drivebase, odometry, fwd_pid, turn_pid);
+MotionController chassis(drivebase, odometry, fwd_pid, turn_pid);

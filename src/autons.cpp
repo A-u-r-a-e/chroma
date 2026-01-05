@@ -3,22 +3,20 @@
 
 using namespace chromatic;
 
-// note that this reference is only valid for this translation unit/file
-MotionController &robot = auton_chassis;
+// please provide the stuff to use
+void drive_test(EncodersIMU &odom, MotionController &pilot) {
 
-void drive_test() {
+    odom.set_pose(Pose({0,0},0));
 
-    odometry.set_pose(Pose({0,0},0));
-
-    robot.move_by(24, 2000, true, true);
+    pilot.move_by(24, 2000, true, true);
 }
 
-void turn_test() {}
+void turn_test(EncodersIMU &odom, MotionController &pilot) {}
 
-void left_side() {}
+void left_side(EncodersIMU &odom, MotionController &pilot) {}
 
-void right_side() {}
+void right_side(EncodersIMU &odom, MotionController &pilot) {}
 
-void solo_awp() {}
+void solo_awp(EncodersIMU &odom, MotionController &pilot) {}
 
-void skills() {}
+void skills(EncodersIMU &odom, MotionController &pilot) {}

@@ -1,4 +1,4 @@
-bin/hardware.cpp.o: src/hardware.cpp include/hardware.h include/main.h \
+bin/config.cpp.o: src/config.cpp include/config.h include/main.h \
  include/api.h include/pros/adi.h include/pros/ai_vision.h \
  include/pros/colors.h include/pros/device.h include/pros/distance.h \
  include/pros/error.h include/pros/ext_adi.h include/pros/adi.h \
@@ -674,8 +674,8 @@ bin/hardware.cpp.o: src/hardware.cpp include/hardware.h include/main.h \
  include/chromatic/chassis/odometry.hpp include/chromatic/control.hpp \
  include/chromatic/control/settle_conditions.hpp \
  include/chromatic/control/pid.hpp \
- include/chromatic/control/linear_motions.hpp
-include/hardware.h:
+ include/chromatic/control/linear_motions.hpp include/hardware.h
+include/config.h:
 include/main.h:
 include/api.h:
 include/pros/adi.h:
@@ -1430,3 +1430,4 @@ include/chromatic/control.hpp:
 include/chromatic/control/settle_conditions.hpp:
 include/chromatic/control/pid.hpp:
 include/chromatic/control/linear_motions.hpp:
+include/hardware.h:

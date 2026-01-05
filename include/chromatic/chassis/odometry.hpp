@@ -10,7 +10,7 @@ namespace chromatic {
     protected:
         std::atomic<bool> active{false};
 
-        mutable pros::MutexVar<PoseV> cur_posev;
+        mutable pros::MutexVar<PoseV> cur_posev{ZeroVec, 0, ZeroVec, 0};
 
         //imu but radians ong, also converts to ccw
         double get_imu_rad(pros::IMU imu) {
@@ -105,7 +105,7 @@ namespace chromatic {
         }
 
         // continuously calculate pose and state
-        void localize(ms poll_delay) {
+        void localize(ms poll_delay = 10) {
             active = true;
             while (active) {
                 double ang = get_imu_rad(inertial);
@@ -120,6 +120,8 @@ namespace chromatic {
                     last_lin = lin;
                     last_time = now();
                 }
+
+                pros::lcd::print(0, "(%f, %f), %f", this->get_pose().pos.x, this->get_pose().pos.y, this->get_pose().dir);
 
 
                 delay_for(poll_delay);

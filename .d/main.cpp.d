@@ -672,7 +672,11 @@ bin/main.cpp.o: src/main.cpp include/main.h include/api.h \
  include/chromatic/core/vector.hpp include/chromatic/core/pose.hpp \
  include/chromatic/chassis.hpp include/chromatic/chassis/differential.hpp \
  include/chromatic/chassis/odometry.hpp include/chromatic/control.hpp \
- include/chromatic/control/pid.hpp include/hardware.h
+ include/chromatic/control/settle_conditions.hpp \
+ include/chromatic/control/pid.hpp \
+ include/chromatic/control/linear_motions.hpp include/autons.h \
+ include/subsystems.h include/config.h include/hardware.h \
+ include/pros/llemu.hpp
 include/main.h:
 include/api.h:
 include/pros/adi.h:
@@ -1424,5 +1428,11 @@ include/chromatic/chassis.hpp:
 include/chromatic/chassis/differential.hpp:
 include/chromatic/chassis/odometry.hpp:
 include/chromatic/control.hpp:
+include/chromatic/control/settle_conditions.hpp:
 include/chromatic/control/pid.hpp:
+include/chromatic/control/linear_motions.hpp:
+include/autons.h:
+include/subsystems.h:
+include/config.h:
 include/hardware.h:
+include/pros/llemu.hpp:

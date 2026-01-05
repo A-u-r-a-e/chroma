@@ -1,5 +1,6 @@
 #pragma once
-#include "main.h"
+#include "api.h"
+#include "chromatic.hpp"
 
 extern const ms OP_POLL_RATE;
 

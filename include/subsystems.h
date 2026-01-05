@@ -1,7 +1,6 @@
 #pragma once
 #include "api.h"
 #include "chromatic.hpp"
-#include "hardware.h"
 #include "config.h"
 
 enum struct CompState{REST, AUTON, OPCONTROL};

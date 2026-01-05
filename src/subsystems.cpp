@@ -27,7 +27,7 @@ void stop_robot() {
     storage.move(0);
     storage.brake();
 
-    drivetrain.brake(true);
+    drivebase.brake(true);
 }
 
 void reset_update() {

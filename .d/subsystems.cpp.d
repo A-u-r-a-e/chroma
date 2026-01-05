@@ -665,8 +665,8 @@ bin/subsystems.cpp.o: src/subsystems.cpp include/subsystems.h \
  include/pros/motors.hpp include/pros/optical.hpp include/pros/optical.h \
  include/pros/rotation.hpp include/pros/rotation.h include/pros/rtos.hpp \
  include/pros/screen.hpp include/pros/screen.h include/pros/vision.hpp \
- include/pros/vision.h include/config.h include/main.h \
- include/chromatic.hpp include/chromatic/shorthands.hpp include/api.h \
+ include/pros/vision.h include/chromatic.hpp \
+ include/chromatic/shorthands.hpp include/api.h \
  include/chromatic/core.hpp include/chromatic/core/std.hpp \
  include/chromatic/core/enums.hpp include/chromatic/core/helpers.hpp \
  include/chromatic/core/vector.hpp include/chromatic/core/pose.hpp \
@@ -674,7 +674,7 @@ bin/subsystems.cpp.o: src/subsystems.cpp include/subsystems.h \
  include/chromatic/chassis/odometry.hpp include/chromatic/control.hpp \
  include/chromatic/control/settle_conditions.hpp \
  include/chromatic/control/pid.hpp \
- include/chromatic/control/linear_motions.hpp include/hardware.h
+ include/chromatic/control/linear_motions.hpp include/config.h
 include/subsystems.h:
 include/api.h:
 include/pros/adi.h:
@@ -1413,8 +1413,6 @@ include/pros/screen.hpp:
 include/pros/screen.h:
 include/pros/vision.hpp:
 include/pros/vision.h:
-include/config.h:
-include/main.h:
 include/chromatic.hpp:
 include/chromatic/shorthands.hpp:
 include/api.h:
@@ -1431,4 +1429,4 @@ include/chromatic/control.hpp:
 include/chromatic/control/settle_conditions.hpp:
 include/chromatic/control/pid.hpp:
 include/chromatic/control/linear_motions.hpp:
-include/hardware.h:
+include/config.h:

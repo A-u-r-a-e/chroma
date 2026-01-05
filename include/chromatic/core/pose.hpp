@@ -8,7 +8,7 @@ namespace chromatic {
 
         // a pose based on position and direction
         Pose(
-            Vec pos, double dir
+            Vec pos = ZeroVec, double dir = 0
         ):
             pos{pos}, dir{dir}
         {}
@@ -31,7 +31,7 @@ namespace chromatic {
 
         // pose but with velocities of both rotational and translational
         PoseV(
-            Vec pos, double dir, Vec vel, double turn
+            Vec pos = ZeroVec, double dir = 0, Vec vel = ZeroVec, double turn = 0
         ):
             Pose{pos, dir}, vel{vel}, turn{turn}
         {}

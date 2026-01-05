@@ -1,5 +1,8 @@
 #pragma once
-#include "main.h"
+#include "api.h"
+#include "chromatic.hpp"
+#include "config.h"
+#include "subsystems.h"
 
 void drive_test();
 

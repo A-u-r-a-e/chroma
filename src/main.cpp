@@ -1,5 +1,4 @@
 #include "main.h"
-#include "autons.h"
 
 using namespace chromatic;
 
@@ -15,8 +14,8 @@ void initialize() {
 	ear.extend();
 	loader.retract();
 
-	odometry.calibrate(Pose({0,0}, 0));
-	odometry.set_pose(Pose({0, 0}, 0));
+	odometry.calibrate();
+	odometry.set_posev(PoseV{});
 }
 
 void disabled() {}
@@ -56,10 +55,10 @@ void opcontrol() {
 		int fwd = master.get_analog(LY);
 		int turn = master.get_analog(RX);
 
-		if (abs(fwd)+abs(turn) == 0) {
-		    drivetrain.arcade_drive(fwd, turn);
+		if (abs(fwd)+abs(turn) != 0) {
+		    drivebase.arcade_drive(fwd, turn);
 		} else {
-		    drivetrain.brake();
+		    drivebase.brake();
 		}
 
 		if (master.get_digital_new_press(BB)) ear.toggle();

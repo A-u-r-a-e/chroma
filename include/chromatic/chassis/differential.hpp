@@ -18,8 +18,8 @@ namespace chromatic {
         }
     public:
 
-        const pros::MotorGroup &left_mg;
-        const pros::MotorGroup &right_mg;
+        pros::MotorGroup &left_mg;
+        pros::MotorGroup &right_mg;
         const double wheel_radius;
         const double motor_wheel_ratio;
         const double track_width;
@@ -28,8 +28,8 @@ namespace chromatic {
         /**
          * @brief Construct a new Differential object
          *
-         * @param left_mg reference to left motor groups. all drivetrain motors must have the same cartridge
-         * @param right_mg reference to left motor groups. all drivetrain motors must have the same cartridge
+         * @param left_mg reference to left motor groups. all drivebase motors must have the same cartridge
+         * @param right_mg reference to left motor groups. all drivebase motors must have the same cartridge
          * @param wheel_radius wheel radius in inches
          * @param gear_ratio motor gear divided by wheel gear
          * @param track_width distance between the centers of the two wheel groups
@@ -45,9 +45,16 @@ namespace chromatic {
                 case pros::MotorGears::blue: max_motor_rpm = 600; break;
             }
 
+
             max_speed = max_motor_rpm * (1.0 / motor_wheel_ratio) * (2 * PI * wheel_radius) * (1.0 / 60);
 
             inch_mvolts = 12000.0 / max_speed;
+        }
+
+        // reset the dt motors through tare
+        void reset() {
+            left_mg.tare_position_all();
+            right_mg.tare_position_all();
         }
 
         // stop the robot with coast, but can brake if parameter is provided

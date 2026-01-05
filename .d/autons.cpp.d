@@ -1,11 +1,11 @@
-bin/autons.cpp.o: src/autons.cpp include/autons.h include/main.h \
- include/api.h include/pros/adi.h include/pros/ai_vision.h \
- include/pros/colors.h include/pros/device.h include/pros/distance.h \
- include/pros/error.h include/pros/ext_adi.h include/pros/adi.h \
- include/pros/adi.h include/pros/gps.h include/pros/imu.h \
- include/pros/link.h include/pros/llemu.h include/liblvgl/llemu.h \
- include/liblvgl/lvgl.h include/liblvgl/lv_version.h \
- include/liblvgl/lvgl_private.h include/liblvgl/core/lv_global.h \
+bin/autons.cpp.o: src/autons.cpp include/autons.h include/api.h \
+ include/pros/adi.h include/pros/ai_vision.h include/pros/colors.h \
+ include/pros/device.h include/pros/distance.h include/pros/error.h \
+ include/pros/ext_adi.h include/pros/adi.h include/pros/adi.h \
+ include/pros/gps.h include/pros/imu.h include/pros/link.h \
+ include/pros/llemu.h include/liblvgl/llemu.h include/liblvgl/lvgl.h \
+ include/liblvgl/lv_version.h include/liblvgl/lvgl_private.h \
+ include/liblvgl/core/lv_global.h \
  include/liblvgl/core/../lv_conf_internal.h \
  include/liblvgl/core/../lv_conf_kconfig.h \
  include/liblvgl/core/../lv_conf.h \
@@ -674,10 +674,9 @@ bin/autons.cpp.o: src/autons.cpp include/autons.h include/main.h \
  include/chromatic/chassis/odometry.hpp include/chromatic/control.hpp \
  include/chromatic/control/settle_conditions.hpp \
  include/chromatic/control/pid.hpp \
- include/chromatic/control/linear_motions.hpp include/subsystems.h \
- include/config.h include/hardware.h
+ include/chromatic/control/linear_motions.hpp include/config.h \
+ include/subsystems.h
 include/autons.h:
-include/main.h:
 include/api.h:
 include/pros/adi.h:
 include/pros/ai_vision.h:
@@ -1431,6 +1430,5 @@ include/chromatic/control.hpp:
 include/chromatic/control/settle_conditions.hpp:
 include/chromatic/control/pid.hpp:
 include/chromatic/control/linear_motions.hpp:
-include/subsystems.h:
 include/config.h:
-include/hardware.h:
+include/subsystems.h:

@@ -9,7 +9,7 @@ namespace chromatic {
 
     struct MotionController {
     private:
-        Differential &drivetrain;
+        Differential &drivebase;
         EncodersIMU &localizer;
         PID fwd_pid, turn_pid;
 
@@ -18,8 +18,8 @@ namespace chromatic {
     public:
 
         MotionController(
-            Differential &drivetrain, EncodersIMU &localizer, PID fwd_pid, PID turn_pid):
-            drivetrain{drivetrain}, localizer{localizer}, fwd_pid{fwd_pid}, turn_pid{turn_pid}
+            Differential &drivebase, EncodersIMU &localizer, PID fwd_pid, PID turn_pid):
+            drivebase{drivebase}, localizer{localizer}, fwd_pid{fwd_pid}, turn_pid{turn_pid}
         {
             in_motion = false;
             set_pollrate(20);
@@ -37,7 +37,7 @@ namespace chromatic {
 
         void interrupt() {
             in_motion = false;
-            drivetrain.brake();
+            drivebase.brake();
         }
 
         /* Motion Code Structure Outline
@@ -134,7 +134,7 @@ namespace chromatic {
                     // crossed the threshold and are within a bounds
                     if (fwd_error_flip && in_bounds) {
                         in_motion = false;
-                        drivetrain.brake();
+                        drivebase.brake();
                         return true;
                     }
                 }
@@ -142,7 +142,7 @@ namespace chromatic {
                 // prevent swivels
                 if (fwd_pid.get_tight_sc().get_settling()) turn = 0;
 
-                drivetrain.command_heuristic(fwd, turn);
+                drivebase.command_heuristic(fwd, turn);
 
                 prev_fwd_error = fwd_error;
                 delay_for(pollrate);
@@ -154,12 +154,12 @@ namespace chromatic {
                 while (!turn_pid.done() && in_motion) {
                     double error = get_facing_error();
                     double turn = turn_pid.compute(error);
-                    drivetrain.command_heuristic(0, turn);
+                    drivebase.command_heuristic(0, turn);
                     delay_for(pollrate);
                 }
             }
 
-            drivetrain.brake();
+            drivebase.brake();
             in_motion = false;
             return true;
         }
@@ -206,18 +206,18 @@ namespace chromatic {
 
                     if (error_flip && in_bounds) {
                         in_motion = false;
-                        drivetrain.brake();
+                        drivebase.brake();
                         return true;
                     }
                 }
 
-                drivetrain.command_heuristic(0, turn_cmd);
+                drivebase.command_heuristic(0, turn_cmd);
 
                 prev_error = error;
                 delay_for(pollrate);
             }
 
-            drivetrain.brake();
+            drivebase.brake();
             in_motion = false;
             return true;
         }
@@ -260,18 +260,18 @@ namespace chromatic {
 
                     if (error_flip && in_bounds) {
                         in_motion = false;
-                        drivetrain.brake();
+                        drivebase.brake();
                         return true;
                     }
                 }
 
-                drivetrain.command_heuristic(0, turn_cmd);
+                drivebase.command_heuristic(0, turn_cmd);
 
                 prev_error = error;
                 delay_for(pollrate);
             }
 
-            drivetrain.brake();
+            drivebase.brake();
             in_motion = false;
             return true;
         }

@@ -13,7 +13,7 @@ namespace chromatic {
         mutable pros::MutexVar<PoseV> cur_posev{ZeroVec, 0, ZeroVec, 0};
 
         //imu but radians ong, also converts to ccw
-        double get_imu_rad(pros::IMU imu) {
+        double get_imu_rad(pros::IMU &imu) {
             return to_rad(-imu.get_rotation());
         }
 
@@ -66,30 +66,39 @@ namespace chromatic {
 
     struct EncodersIMU : public Odometry {
     private:
-        const Differential& drivetrain;
-        const pros::IMU& inertial;
+        Differential& drivebase;
+        pros::IMU& inertial;
         const double ticks_per_rotation;
 
         double last_ang;
         double last_lin;
         ms last_time;
+
+        std::atomic<bool> calibrated;
     public:
 
         // btw ticks per rotation is the encoder ticks of the encoder per full 360º rotation
         EncodersIMU(
-            Differential &drivetrain, pros::IMU &inertial, double ticks_per_rotation):
-            drivetrain(drivetrain), inertial(inertial), ticks_per_rotation(ticks_per_rotation)
-        {}
-
-        // calibrate odometry and set starting pose
-        void calibrate(Pose init) {
-            active = false;
-            inertial.reset();
-            set_pose(init);
-            last_ang = get_imu_rad(inertial);
-            last_lin = (2 * PI * drivetrain.wheel_radius) *
-                (average(drivetrain.left_mg.get_position_all()) + average(drivetrain.right_mg.get_position_all()))/(2 * ticks_per_rotation);
+            Differential &drivebase, pros::IMU &inertial, double ticks_per_rotation):
+            drivebase(drivebase), inertial(inertial), ticks_per_rotation(ticks_per_rotation)
+        {
+            calibrated = false;
+            last_ang = 0;
+            last_lin = 0;
             last_time = now();
+        }
+
+        // calibrate odom oand reset drivebase
+        void calibrate() {
+            active = false;
+            calibrated = false;
+            inertial.reset(true);
+            inertial.tare();
+            drivebase.reset();
+            last_ang = 0;
+            last_lin = 0;
+            last_time = now();
+            calibrated = true;
         }
 
         // calculate pose
@@ -106,11 +115,11 @@ namespace chromatic {
 
         // continuously calculate pose and state
         void localize(ms poll_delay = 10) {
+            while (!calibrated);
             active = true;
-            while (active) {
+            while (active && calibrated) {
                 double ang = get_imu_rad(inertial);
-                double lin = (2 * PI * drivetrain.wheel_radius) *
-                (average(drivetrain.left_mg.get_position_all()) + average(drivetrain.right_mg.get_position_all()))/(2 * ticks_per_rotation);
+                double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * ticks_per_rotation);
                 double dt = now() - last_time;
 
                 if (dt > 0) {

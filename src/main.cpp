@@ -27,7 +27,7 @@ void autonomous() {
     pros::Task body_task([&]{run_body();});
     pros::Task odom_task([&]{odometry.localize();});
 
-    auton_controller.set_pollrate(auton_pollrate);
+    auton_chassis.set_pollrate(auton_pollrate);
 
     drive_test();
 
@@ -44,7 +44,7 @@ void opcontrol() {
     master.print(0, 0, "helloooo");
     pros::lcd::print(1, "in opcontrol");
     delay_for(5000);
-    auton_controller.interrupt();
+    auton_chassis.interrupt();
     stop_body();
     delay_for(50);
 

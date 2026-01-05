@@ -24,7 +24,7 @@ ms op_pollrate = 10;
 
 Differential drivebase(left_mg, right_mg, 2.75, 1.5, 13, 1.0);
 
-EncodersIMU odometry(drivebase, inertial, 440);
+EncodersIMU odometry(drivebase, inertial);
 
 PID fwd_pid(
     7, 0.1, 5, 5,
@@ -38,4 +38,4 @@ PID turn_pid(
     to_rad(120), to_rad(180), to_rad(360)
 );
 
-MotionController auton_controller(drivebase, odometry, fwd_pid, turn_pid);
+MotionController auton_chassis(drivebase, odometry, fwd_pid, turn_pid);

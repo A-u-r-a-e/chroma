@@ -7,9 +7,11 @@ namespace chromatic {
 
     struct Differential {
     protected:
+        double ticks_per_wheel_rev;
         double max_motor_rpm;
         double inch_mvolts;
         double max_speed;
+        double motor_ticks = 0;
 
         inline double max_speed_ratio(double left, double right) {
             double max_scalar = std::max(fabs(left), fabs(right));
@@ -24,6 +26,7 @@ namespace chromatic {
         const double motor_wheel_ratio;
         const double track_width;
         const double safety_limiter;
+
 
         /**
          * @brief Construct a new Differential object
@@ -40,15 +43,21 @@ namespace chromatic {
             left_mg(left_mg), right_mg(right_mg), wheel_radius(wheel_radius), motor_wheel_ratio(gear_ratio), track_width(track_width),  safety_limiter(safety_limiter)
         {
             switch (left_mg.get_gearing()) {
-                case pros::MotorGears::red: max_motor_rpm = 100; break;
-                case pros::MotorGears::green: max_motor_rpm = 200; break;
-                case pros::MotorGears::blue: max_motor_rpm = 600; break;
+                case pros::MotorGears::red: max_motor_rpm = 100; motor_ticks = 1800; break;
+                case pros::MotorGears::green: max_motor_rpm = 200; motor_ticks = 900; break;
+                case pros::MotorGears::blue: max_motor_rpm = 600; motor_ticks = 300; break;
             }
 
+            ticks_per_wheel_rev = motor_ticks / motor_wheel_ratio;
 
-            max_speed = max_motor_rpm * (1.0 / motor_wheel_ratio) * (2 * PI * wheel_radius) * (1.0 / 60);
+            max_speed = max_motor_rpm * motor_wheel_ratio * (2 * PI * wheel_radius) * (1.0 / 60);
 
             inch_mvolts = 12000.0 / max_speed;
+        }
+
+        // simple getter
+        inline double get_ticks_per_wheel_rev() const {
+            return ticks_per_wheel_rev;
         }
 
         // reset the dt motors through tare

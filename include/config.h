@@ -25,4 +25,4 @@ extern chromatic::Differential drivebase;
 extern chromatic::EncodersIMU odometry;
 extern chromatic::PID fwd_pid;
 extern chromatic::PID turn_pid;
-extern chromatic::MotionController auton_controller;
+extern chromatic::MotionController auton_chassis;

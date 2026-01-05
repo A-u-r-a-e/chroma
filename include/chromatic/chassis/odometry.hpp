@@ -68,7 +68,6 @@ namespace chromatic {
     private:
         Differential& drivebase;
         pros::IMU& inertial;
-        const double ticks_per_rotation;
 
         double last_ang;
         double last_lin;
@@ -77,10 +76,9 @@ namespace chromatic {
         std::atomic<bool> calibrated;
     public:
 
-        // btw ticks per rotation is the encoder ticks of the encoder per full 360º rotation
         EncodersIMU(
-            Differential &drivebase, pros::IMU &inertial, double ticks_per_rotation):
-            drivebase(drivebase), inertial(inertial), ticks_per_rotation(ticks_per_rotation)
+            Differential &drivebase, pros::IMU &inertial):
+            drivebase(drivebase), inertial(inertial)
         {
             calibrated = false;
             last_ang = 0;
@@ -119,7 +117,7 @@ namespace chromatic {
             active = true;
             while (active && calibrated) {
                 double ang = get_imu_rad(inertial);
-                double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * ticks_per_rotation);
+                double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * drivebase.get_ticks_per_wheel_rev());
                 double dt = now() - last_time;
 
                 if (dt > 0) {

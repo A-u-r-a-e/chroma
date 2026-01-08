@@ -19,9 +19,10 @@ namespace chromatic {
         ):
             settle_range(settle_range), settle_duration(settle_duration)
         {
-            last_update = now();
             settling_since = INT32_MAX;
             settling = false;
+            last_update = now();
+
         }
 
         // evaluate if settled (based on updates and stuff)

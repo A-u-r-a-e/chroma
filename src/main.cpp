@@ -1,5 +1,9 @@
 #include "main.h"
+#include "autons.h"
 #include "config.h"
+#include "pros/llemu.hpp"
+#include "pros/screen.hpp"
+#include "subsystems.h"
 
 using namespace chromatic;
 
@@ -12,7 +16,7 @@ void initialize() {
 	intake.set_brake_mode(BRAKE);
 	outtake.set_brake_mode(BRAKE);
 
-	ear.extend();
+	hook.extend();
 	loader.retract();
 
 	odometry.calibrate();
@@ -28,9 +32,14 @@ void autonomous() {
     pros::Task body_task([&]{run_body();});
     pros::Task odom_task([&]{odometry.localize();});
 
+    odometry.set_pose(Pose{{0, 0}, 0});
+
     chassis.set_pollrate(auton_pollrate);
 
-    drive_test(odometry, chassis);
+    // turn_test(odometry, chassis);
+    // drive_test(odometry, chassis);
+    // left_side(odometry, chassis);
+    full_test(odometry, chassis);
 
     stop_body();
     odometry.stop_loop();
@@ -41,20 +50,21 @@ void autonomous() {
 }
 
 void opcontrol() {
-    comp_state = CompState::OPCONTROL;
-    master.print(0, 0, "helloooo");
-    pros::lcd::print(1, "in opcontrol");
-    delay_for(5000);
+    if (comp_state != CompState::REST) stop_body();
     chassis.interrupt();
-    stop_body();
-    delay_for(50);
 
-    pros::Task body_task([&]{run_body();});
+    comp_state = CompState::OPCONTROL;
+
+    pros::Task odom_task([&]{odometry.localize();});
+
+    odometry.set_pose(Pose({0, 0}, 0));
 
 	while (true) {
 
 		int fwd = master.get_analog(LY);
 		int turn = master.get_analog(RX);
+
+		master.print(0, 0, "body: %d", static_cast<int>(body_state.load()));
 
 		if (abs(fwd)+abs(turn) != 0) {
 		    chassis.override_arcade(fwd, turn);
@@ -62,20 +72,26 @@ void opcontrol() {
 		    chassis.override_brake();
 		}
 
-		if (master.get_digital_new_press(BB)) ear.toggle();
-		if (master.get_digital_new_press(BA)) loader.toggle();
+		if (master.get_digital_new_press(BB)) hook_state = (hook_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
+		if (master.get_digital_new_press(BA)) loader_state = (loader_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
 
-		if (master.get_digital(R2)) body_state = Body::I_STORAGE;
-		if (master.get_digital(AD)) body_state = Body::S_MIDDLE;
-		if (master.get_digital(R1)) body_state = Body::S_LOW;
-		if (master.get_digital(L2)) body_state = Body::S_FULL;
-		if (master.get_digital(L1)) body_state = Body::E_FULL;
+		if (master.get_digital(R2)) {body_state = Body::I_STORAGE;}
+		else if (master.get_digital(AD)) {body_state = Body::S_MIDDLE;}
+		else if (master.get_digital(R1)) {body_state = Body::S_LOW;}
+		else if (master.get_digital(L2)) {body_state = Body::S_FULL;}
+		else if (master.get_digital(L1)) {body_state = Body::E_FULL;}
+		else {body_state = Body::NOTHING;}
+
+        prepare_body();
+        update_body();
+        actuate_body();
 
 		delay_for(OP_POLL_RATE);
 	}
 
 	comp_state = CompState::REST;
 
-	stop_body();
-	body_task.join();
+	odometry.stop_loop();
+
+	odom_task.join();
 }

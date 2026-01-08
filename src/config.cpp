@@ -1,6 +1,8 @@
 #include "config.h"
 
 const ms OP_POLL_RATE = 5;
+const double MAX_ACC = 120;
+const double MAX_ALPHA = 6*PI;
 
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-11, -6, 7}, pros::MotorGearset::blue, pros::MotorEncoderUnits::counts);
@@ -9,7 +11,7 @@ pros::MotorGroup right_mg({18, 16, -17}, pros::MotorGearset::blue, pros::MotorEn
 pros::Motor intake(14);
 pros::Motor storage(15);
 pros::Motor outtake(-20);
-pros::adi::Pneumatics ear('h', false);
+pros::adi::Pneumatics hook('h', true);
 pros::adi::Pneumatics loader('g', false);
 
 pros::IMU inertial(19);
@@ -22,20 +24,20 @@ double LIDAR_RANGE = 100;
 ms auton_pollrate = 10;
 ms op_pollrate = 10;
 
-Differential drivebase(left_mg, right_mg, 2.75, 1.5, 13, 1.0);
+Differential drivebase(left_mg, right_mg, 2.75, 0.4, 13, 0.5);
 
 EncodersIMU odometry(drivebase, inertial);
 
 PID fwd_pid(
-    7, 0.1, 5, 5,
-    SettleCondition(0.25, 50), SettleCondition(0.5, 500),
+    6, 0, 0.8, 5,
+    SettleCondition(0.1, 50), SettleCondition(0.5, 200),
     20, 30, 60
 );
 
 PID turn_pid(
-    0.88, 0.05, 0.63, to_rad(10),
-    SettleCondition(to_rad(1), 50), SettleCondition(to_rad(2), 200),
-    to_rad(120), to_rad(180), to_rad(360)
+    6, 0.1, 0.3, to_rad(30),
+    SettleCondition(to_rad(1), 50), SettleCondition(to_rad(3), 200),
+    PI, 2*PI, 8*PI
 );
 
-MotionController chassis(drivebase, odometry, fwd_pid, turn_pid);
+MotionController chassis(drivebase, odometry, fwd_pid, turn_pid, SlewRate{MAX_ACC}, SlewRate{MAX_ALPHA});

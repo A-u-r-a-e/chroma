@@ -14,7 +14,7 @@ namespace chromatic {
 
         //imu but radians ong, also converts to ccw
         double get_imu_rad(pros::IMU &imu) {
-            return to_rad(-imu.get_rotation());
+            return to_rad(-imu.get_heading());
         }
 
         // theta radians turning, ccw
@@ -128,7 +128,7 @@ namespace chromatic {
                     last_time = now();
                 }
 
-                pros::lcd::print(0, "(%f, %f), %f", this->get_pose().pos.x, this->get_pose().pos.y, this->get_pose().dir);
+                pros::lcd::print(0, "(%f, %f), %f", this->get_pose().pos.x, this->get_pose().pos.y, to_deg(this->get_pose().dir));
 
 
                 delay_for(poll_delay);

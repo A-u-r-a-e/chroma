@@ -3,8 +3,10 @@
 
 using namespace chromatic;
 
-std::atomic<CompState> comp_state = CompState::REST;
-std::atomic<Body> body_state = Body::NOTHING;
+std::atomic<CompState> comp_state{CompState::REST};
+std::atomic<Body> body_state{Body::NOTHING};
+std::atomic<Pneumatic> loader_state{Pneumatic::RETRACTED};
+std::atomic<Pneumatic> hook_state{Pneumatic::EXTENDED};
 
 std::atomic<int> intake_cmd(0);
 std::atomic<int> outtake_cmd(0);
@@ -28,14 +30,6 @@ void stop_robot() {
     storage.brake();
 
     drivebase.brake(true);
-}
-
-void reset_update() {
-    intake_cmd.store(0);
-    outtake_cmd.store(0);
-    storage_cmd.store(0);
-    upper_outake.store(true);
-    scoring.store(true);
 }
 
 void intake_storage_update(const double LIDAR_RANGE, bool slow) {
@@ -72,40 +66,56 @@ void full_linear_update(SIGN direction) {
     scoring.store((static_cast<int>(direction) > 0));
 }
 
-void actuate_update() {
-    double intkon = intake_cmd.load();
-    double outkon = outtake_cmd.load();
-    double storgon = storage_cmd.load();
-
-    if (intkon == 0) intake.brake(); else intake.move(intkon);
-    if (outkon == 0) outtake.brake(); else outtake.move(outkon);
-    if (storgon == 0) storage.brake(); else storage.move(storgon);
+void update_body() {
+    switch (body_state.load()) {
+        case Body::I_ONLY: suck_update(); break;
+        case Body::I_STORAGE: intake_storage_update(LIDAR_RANGE, true); break;
+        case Body::E_FULL: full_linear_update(SIGN::NEGATIVE); break;
+        case Body::S_FULL: full_linear_update(SIGN::POSITIVE); break;
+        case Body::S_MIDDLE: middle_outtake_update(); break;
+        case Body::S_LOW: spit_update(); break;
+    }
+    switch (hook_state.load()) {
+        case Pneumatic::EXTENDED: if (!hook.is_extended()) {hook.extend();} break;
+        case Pneumatic::RETRACTED: if (hook.is_extended()) {hook.retract();} break;
+    }
+    switch (loader_state.load()) {
+        case Pneumatic::EXTENDED: if (!loader.is_extended()) {loader.extend();} break;
+        case Pneumatic::RETRACTED: if (loader.is_extended()) {loader.retract();} break;
+    }
 }
 
+void prepare_body() {
+    intake_cmd.store(0);
+    outtake_cmd.store(0);
+    storage_cmd.store(0);
+    upper_outake.store(true);
+    scoring.store(true);
+}
+
+void actuate_body() {
+    if (intake_cmd == 0) intake.brake(); else intake.move(intake_cmd);
+    if (outtake_cmd == 0) outtake.brake(); else outtake.move(outtake_cmd);
+    if (storage_cmd == 0) storage.brake(); else storage.move(storage_cmd);
+}
 
 void run_body(ms pollrate) {
-    CompState current_state = comp_state;
-    if (current_state == CompState::REST) return;
-    while (comp_state == current_state) {
-        reset_update();
-
-        switch (body_state) {
-            case Body::I_ONLY: suck_update(); break;
-            case Body::I_STORAGE: intake_storage_update(LIDAR_RANGE, true); break;
-            case Body::E_FULL: full_linear_update(SIGN::NEGATIVE); break;
-            case Body::S_FULL: full_linear_update(SIGN::POSITIVE); break;
-            case Body::S_MIDDLE: middle_outtake_update(); break;
-            case Body::S_LOW: spit_update(); break;
-            default: break;
-        }
-
-        actuate_update();
-		delay_for(10);
+    while (comp_state != CompState::REST) {
+        prepare_body();
+        update_body();
+        actuate_body();
+		delay_for(pollrate);
     }
 }
 
 void stop_body() {
     comp_state = CompState::REST;
-	reset_update();
-	actuate_update();
+    intake_cmd.store(0);
+    outtake_cmd.store(0);
+    storage_cmd.store(0);
+    upper_outake.store(true);
+    scoring.store(true);
+    intake.brake();
+    outtake.brake();
+    storage.brake();
 }

@@ -2,6 +2,7 @@
 #include "api.h"
 #include "chromatic/core.hpp"
 #include "chromatic/shorthands.hpp"
+#include "pros/llemu.hpp"
 
 namespace chromatic {
 
@@ -51,6 +52,7 @@ namespace chromatic {
             ticks_per_wheel_rev = motor_ticks / motor_wheel_ratio;
 
             max_speed = max_motor_rpm * motor_wheel_ratio * (2 * PI * wheel_radius) * (1.0 / 60);
+            pros::lcd::print(4, "max speed %f", max_speed);
 
             inch_mvolts = 12000.0 / max_speed;
         }
@@ -87,6 +89,7 @@ namespace chromatic {
 
         // deals in inches/second, this prioritizes turn over fwd, turn is left (ccw)
         // heuristic control, good for non-motion-profile auton
+        // WARNING: TURN IS IN THE SAME SCALES AS FWD
         void command_heuristic(double fwd, double turn) {
             double left_cmd = fwd - turn, right_cmd = fwd + turn;
             double ratio = max_speed_ratio(left_cmd, right_cmd);
@@ -95,6 +98,9 @@ namespace chromatic {
                 left_cmd *= ratio;
                 right_cmd *= ratio;
             }
+
+            pros::lcd::print(6, "lvolt, %f", inch_mvolts * left_cmd);
+            pros::lcd::print(7, "rvolts, %f", inch_mvolts * right_cmd);
 
             left_mg.move_voltage(inch_mvolts * left_cmd);
             right_mg.move_voltage(inch_mvolts * right_cmd);

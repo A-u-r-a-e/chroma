@@ -671,9 +671,10 @@ bin/subsystems.cpp.o: src/subsystems.cpp include/subsystems.h \
  include/chromatic/core/enums.hpp include/chromatic/core/helpers.hpp \
  include/chromatic/core/vector.hpp include/chromatic/core/pose.hpp \
  include/chromatic/chassis.hpp include/chromatic/chassis/differential.hpp \
- include/chromatic/chassis/odometry.hpp include/chromatic/control.hpp \
+ include/pros/llemu.hpp include/chromatic/chassis/odometry.hpp \
+ include/chromatic/control.hpp \
  include/chromatic/control/settle_conditions.hpp \
- include/chromatic/control/pid.hpp \
+ include/chromatic/control/slew.hpp include/chromatic/control/pid.hpp \
  include/chromatic/control/linear_motions.hpp include/config.h
 include/subsystems.h:
 include/api.h:
@@ -1424,9 +1425,11 @@ include/chromatic/core/vector.hpp:
 include/chromatic/core/pose.hpp:
 include/chromatic/chassis.hpp:
 include/chromatic/chassis/differential.hpp:
+include/pros/llemu.hpp:
 include/chromatic/chassis/odometry.hpp:
 include/chromatic/control.hpp:
 include/chromatic/control/settle_conditions.hpp:
+include/chromatic/control/slew.hpp:
 include/chromatic/control/pid.hpp:
 include/chromatic/control/linear_motions.hpp:
 include/config.h:

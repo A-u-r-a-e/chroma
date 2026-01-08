@@ -3,6 +3,8 @@
 #include "chromatic.hpp"
 
 extern const ms OP_POLL_RATE;
+extern const double MAX_ACC;
+extern const double MAX_ALPHA;
 
 extern pros::Controller master;
 extern pros::MotorGroup left_mg;
@@ -11,7 +13,7 @@ extern pros::MotorGroup right_mg;
 extern pros::Motor intake;
 extern pros::Motor storage;
 extern pros::Motor outtake;
-extern pros::adi::Pneumatics ear;
+extern pros::adi::Pneumatics hook;
 extern pros::adi::Pneumatics loader;
 
 extern pros::IMU inertial;

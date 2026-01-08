@@ -71,11 +71,11 @@
             "-funwind-tables",
             "--std=gnu++23",
             "-o",
-            "bin/autons.cpp.o",
-            "src/autons.cpp"
+            "bin/subsystems.cpp.o",
+            "src/subsystems.cpp"
         ],
         "directory": "/Users/good.jar/just code/dir_roboticism/chromatic",
-        "file": "src/autons.cpp"
+        "file": "src/subsystems.cpp"
     },
     {
         "arguments": [
@@ -110,11 +110,11 @@
             "-funwind-tables",
             "--std=gnu++23",
             "-o",
-            "bin/subsystems.cpp.o",
-            "src/subsystems.cpp"
+            "bin/autons.cpp.o",
+            "src/autons.cpp"
         ],
         "directory": "/Users/good.jar/just code/dir_roboticism/chromatic",
-        "file": "src/subsystems.cpp"
+        "file": "src/autons.cpp"
     },
     {
         "arguments": [

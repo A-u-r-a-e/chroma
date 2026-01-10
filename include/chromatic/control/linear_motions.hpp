@@ -5,6 +5,7 @@
 #include "chromatic/core.hpp"
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
+#include <cmath>
 
 namespace chromatic {
 
@@ -126,8 +127,13 @@ namespace chromatic {
         // timeout is timeout -1 means none
         // mono move just means do we allow the reverse movement. good for motion "chaining"
         // also pose determines if we care about end heading
-        bool move_to(Pose target, SIGN direction, ms timeout = -1, bool mono_move = false, bool also_pose = false) {
-            if (in_motion || direction == SIGN::ZERO) return false;
+        [[deprecated("this is buggy and does not work")]]
+        double move_to(Pose target, SIGN direction, ms timeout = -1, bool mono_move = false, bool also_pose = false) {
+            auto true_error = [&] {
+                return mag(target.pos - localizer.get_pose().pos);
+            };
+
+            if (in_motion || direction == SIGN::ZERO) return true_error();
             in_motion = true;
 
             Pose pre_motion = localizer.get_pose();
@@ -173,7 +179,6 @@ namespace chromatic {
                 fwd = fwd_slew.update(fwd);
                 turn = turn_slew.update(turn);
 
-
                 if (disable_turn) {
                     turn_pid.reset_integral();
                     turn = 0;
@@ -181,14 +186,14 @@ namespace chromatic {
 
                 // if we are ensuring that a) we exit after crossing threshold and b) we do not move in opposite direction
                 if (mono_move) {
-                    bool fwd_error_flip = fwd_error * prev_fwd_error < 0;
+                    bool fwd_error_flip = signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
                     // crossed the threshold and are within a bounds
                     if (fwd_error_flip && in_bounds) {
                         in_motion = false;
                         drivebase.brake();
-                        return true;
+                        return true_error();
                     }
                 }
 
@@ -200,21 +205,22 @@ namespace chromatic {
 
             ms time_remaining = fwd_pid.time_left();
             if (also_pose && fwd_pid.settled() && time_remaining > 0) {
-                turn_to(pre_motion.dir, time_remaining, false);
+                turn_to(target_pose.dir, time_remaining, false);
             }
+
 
             drivebase.brake();
             in_motion = false;
-            return true;
+            return true_error();
 
         }
 
         // drives relative to the current heading by some amount command, returns true if successful
-        // timeout = -1 will simply disable timeout
+        // timeout = -1 will simply disable timeout, same as max_speed
         // mono_move will return the moment the robot has reached the large settle range and crossed the target, does not brake, also ensures that robot motor commands are always in the same direction
         // ensure_facing will cause the robot to turn to face the original direction if successful settle. if false, will turn extra only if time allots it
-        bool move_by(double amount, ms timeout = -1, bool mono_move = false, bool ensure_facing = false) {
-            if (in_motion) return false;
+        bool move_by(double amount, ms timeout = -1, double max_speed = -1, bool mono_move = false, bool ensure_facing = false) {
+            if (in_motion) return amount;
             in_motion = true;
 
             Pose pre_motion = localizer.get_pose();
@@ -267,15 +273,21 @@ namespace chromatic {
 
                 // if we are ensuring that a) we exit after crossing threshold and b) we do not move in opposite direction
                 if (mono_move) {
-                    bool fwd_error_flip = fwd_error * prev_fwd_error < 0;
+                    bool fwd_error_flip = signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
                     // crossed the threshold and are within a bounds
                     if (fwd_error_flip && in_bounds) {
                         in_motion = false;
                         drivebase.brake();
-                        return true;
+                        return get_fwd_error();
                     }
+                }
+
+                if (max_speed > 0 && fabs(fwd) > 0 && fabs(fwd) > max_speed) {
+                    double ratio = max_speed / fabs(fwd);
+                    fwd *= ratio;
+                    turn *= ratio;
                 }
 
                 drivebase.command_velocities(fwd, turn);
@@ -291,13 +303,16 @@ namespace chromatic {
 
             drivebase.brake();
             in_motion = false;
-            return true;
+            return get_fwd_error();
         }
 
         // turn to some target radian angle with either specified direction or closest (default), custom timeout (-1 for no timeout) and mono-movement for motion-chaining
         // mono movement will cause turn to exit if we've crossed the moment we cross the target
-        bool turn_to(double target_radians, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER) {
-            if (in_motion) return false;
+        double turn_to(double target_radians, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER) {
+            auto true_error = [&] {
+                return calculate_turn(target_radians, localizer.get_pose().dir);
+            };
+            if (in_motion) return true_error();
             in_motion = true;
 
             double origin = localizer.get_pose().dir;
@@ -334,13 +349,13 @@ namespace chromatic {
                 turn = turn_slew.update(turn);
 
                 if (mono_move) {
-                    bool error_flip = error * prev_error < 0;
+                    bool error_flip = signflip(error, prev_error);
                     bool in_bounds = turn_pid.get_loose_sc().get_settling();
 
                     if (error_flip && in_bounds) {
                         in_motion = false;
                         drivebase.brake();
-                        return true;
+                        return true_error();
                     }
                 }
 
@@ -353,13 +368,13 @@ namespace chromatic {
 
             drivebase.brake();
             in_motion = false;
-            return true;
+            return true_error();
         }
 
         // turn by some amount with a direction (cannot be EITHER, will exit), custom timeout (-1 for no timeout), and mono-movement for motion-chaining
         // mono movement will cause turn to exit if we've crossed the moment we cross the target
         bool turn_by(double amount_radians, DIR direction, ms timeout = -1, bool mono_move = false) {
-            if (in_motion || direction == DIR::EITHER) return false;
+            if (in_motion || direction == DIR::EITHER) return amount_radians;
             in_motion = true;
 
             double amount = amount_radians;
@@ -394,13 +409,13 @@ namespace chromatic {
                 turn_cmd = turn_slew.update(turn_cmd);
 
                 if (mono_move) {
-                    bool error_flip = error * prev_error < 0;
+                    bool error_flip = signflip(error, prev_error);
                     bool in_bounds = turn_pid.get_loose_sc().get_settling();
 
                     if (error_flip && in_bounds) {
                         in_motion = false;
                         drivebase.brake();
-                        return true;
+                        return get_error();
                     }
                 }
 
@@ -412,7 +427,7 @@ namespace chromatic {
 
             drivebase.brake();
             in_motion = false;
-            return true;
+            return get_error();
         }
 
     };

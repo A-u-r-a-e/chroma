@@ -103,7 +103,7 @@ namespace chromatic {
             // reset integral after overshooting
             /*overshot = prev_error * error < 0;*/
             // disable integral after overshooting
-            if (prev_error * error < 0) overshot = true;
+            if (signflip(prev_error, error)) overshot = true;
 
             double P{0}, I{0}, D{0};
 

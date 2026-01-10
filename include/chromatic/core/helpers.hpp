@@ -137,13 +137,13 @@ namespace chromatic {
     /**
      * @brief see if a value has switched signs or not
      *
-     * @param pre last value
-     * @param post current value
+     * @param a last value
+     * @param b current value
      * @return true
      * @return false
      */
-    inline bool signflip(double pre, double post) {
-        return pre * post < 0;
+    inline bool signflip(double a, double b) {
+        return a * b < 0;
     }
 
     /**

@@ -4,9 +4,15 @@
 using task = pros::Task;
 using ms = uint32_t;
 
-inline void delay_for(ms dt) {pros::Task::delay(dt);}
-inline void delay_until(ms* ref, ms dt) {pros::Task::delay_until(ref, dt);}
-inline ms now() {return pros::millis();}
+inline void delay_for(ms dt) {
+    pros::Task::delay(dt);
+}
+inline void delay_until(ms* ref, ms dt) {
+    pros::Task::delay_until(ref, dt);
+}
+inline ms now() {
+    return pros::millis();
+}
 
 constexpr auto COAST = pros::E_MOTOR_BRAKE_COAST;
 constexpr auto BRAKE = pros::E_MOTOR_BRAKE_BRAKE;

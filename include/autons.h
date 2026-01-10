@@ -8,6 +8,8 @@ void drive_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot
 
 void turn_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
+void move_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
+
 void full_test(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
 void left_side(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);

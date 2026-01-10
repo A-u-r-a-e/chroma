@@ -38,8 +38,9 @@ void autonomous() {
 
     // turn_test(odometry, chassis);
     // drive_test(odometry, chassis);
-    // left_side(odometry, chassis);
-    full_test(odometry, chassis);
+    // move_test(odometry, chassis);
+    left_side(odometry, chassis);
+    // full_test(odometry, chassis);
 
     stop_body();
     odometry.stop_loop();

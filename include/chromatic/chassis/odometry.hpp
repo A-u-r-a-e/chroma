@@ -129,6 +129,7 @@ namespace chromatic {
             while (!calibrated);
             active = true;
             while (active && calibrated) {
+                // these values are completely independent from posev
                 double ang = get_imu_rad(inertial);
                 double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * drivebase.get_ticks_per_wheel_rev());
 
@@ -137,7 +138,7 @@ namespace chromatic {
                 double dt = now() - last_time;
 
                 if (dt > 0) {
-                    compute(dpos,dang, dt);
+                    integrate(dpos, dang, dt);
                     last_ang = ang;
                     last_lin = lin;
                     last_time = now();

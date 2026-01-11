@@ -45,39 +45,41 @@ namespace chromatic {
     }
 
     /**
-     * @brief Convert from a turn to a heading
-     *
-     * @param turn [-pi or 180, pi or 180]
-     * @param radians is this in radians or not
-     * @return double [0, 2pi or 360]
-     */
-    inline double to_head(double turn, bool radians = true) {
-        double compare = (radians ? PI : 180);
-        return turn + compare;
-    }
-    /**
-     * @brief Convert from a heading to a turn
-     *
-     * @param turn [0, 2pi or 360]
-     * @param radians is this in radians or not
-     * @return double [-pi or 180, pi or 180]
-     */
-    inline double to_turn(double heading, bool radians = true) {
-        double compare = (radians ? PI : 180);
-        if (heading >= compare) return heading - 2 * compare;
-        return heading;
+        * @brief Normalize angle for heading
+        *
+        * @param theta the value
+        * @param radians the range of [0, div] to modulo this into
+        * @return double
+        */
+    inline double wrap_angle(double theta, bool radians = true) {
+        double div = (radians ? 2 * PI : 360);
+        return fmod(fmod(theta+div,div)+div, div);
     }
 
     /**
-     * @brief Normalize angle for heading
+     * @brief Convert from a bearing to a heading
      *
-     * @param theta the value
-     * @param radians the range of [0, div] to modulo this into
-     * @return double
+     * @param bearing [-pi or 180, pi or 180]
+     * @param radians is this in radians or not
+     * @return double [0, 2pi or 360]
      */
-    inline double norm_angle(double theta, bool radians = true) {
-        double div = (radians ? 2 * PI : 360);
-        return fmod(fmod(theta+div,div)+div, div);
+    inline double to_head(double bearing, bool radians = true) {
+        double compare = (radians ? PI : 180);
+        return wrap_angle(bearing + compare, radians);
+    }
+
+    /**
+     * @brief Convert from a heading to a bearing
+     *
+     * @param heading [0, 2pi or 360]
+     * @param radians is this in radians or not
+     * @return double [-pi or 180, pi or 180]
+     */
+    inline double to_bearing(double heading, bool radians = true) {
+        double compare = (radians ? PI : 180);
+        double wrapped = wrap_angle(heading, radians);
+        if (wrapped >= compare) return wrapped - 2 * compare;
+        return wrapped;
     }
 
     /**
@@ -92,13 +94,13 @@ namespace chromatic {
     inline double calculate_turn(double start, double end, DIR way = DIR::EITHER) {
         switch (way) {
         case DIR::CLOCKWISE:
-            return 2*PI - norm_angle(start - end);
+            return 2*PI - wrap_angle(start - end);
             break;
         case DIR::COUNTERCLOCKWISE:
-            return norm_angle(end - start);
+            return wrap_angle(end - start);
             break;
         default:
-            return to_turn(norm_angle(end - start));
+            return to_bearing(end - start);
         }
     }
 

@@ -2,7 +2,6 @@
 #include "api.h"
 #include "chromatic/core.hpp"
 #include "chromatic/shorthands.hpp"
-#include "pros/llemu.hpp"
 
 namespace chromatic {
 

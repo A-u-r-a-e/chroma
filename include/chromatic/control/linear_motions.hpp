@@ -159,7 +159,7 @@ namespace chromatic {
                 Pose cur_pose = localizer.get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
-                if (backwards) target_facing = norm_angle(target_facing + PI);
+                if (backwards) target_facing = wrap_angle(target_facing + PI);
                 double turn_error = calculate_turn(cur_pose.dir, target_facing);
                 return turn_error;
             };
@@ -245,7 +245,7 @@ namespace chromatic {
                 Pose cur_pose = localizer.get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
-                if (amount < 0) target_facing = norm_angle(target_facing + PI);
+                if (amount < 0) target_facing = wrap_angle(target_facing + PI);
                 double turn_error = calculate_turn(cur_pose.dir, target_facing);
                 return turn_error;
             };

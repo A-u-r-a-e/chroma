@@ -18,6 +18,12 @@ namespace chromatic {
             return to_rad(360-imu.get_heading());
         }
 
+        // update the current state (pose and velocities)
+        void update(PoseV posev) {
+            *(cur_posev.lock()) = posev;
+            return;
+        }
+
         // theta radians turning, ccw
         Vec calculate_arc(Vec d_position, double d_theta) {
             Vec x_transform{
@@ -33,7 +39,7 @@ namespace chromatic {
         }
 
         // calculate pose
-        void compute(Vec dpos, double dang, ms dt) {
+        void integrate(Vec dpos, double dang, ms dt) {
             PoseV last_pose = get_posev();
             double ds = dt / 1000.0; // dt in seconds
             dpos = rotate(dpos, last_pose.dir);
@@ -44,7 +50,7 @@ namespace chromatic {
                 delta / ds,
                 dang / ds
             };
-            set_posev(cur);
+            update(cur);
         }
 
     public:

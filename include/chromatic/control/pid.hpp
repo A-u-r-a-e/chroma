@@ -101,7 +101,7 @@ namespace chromatic {
             sc_tight.update(error, this_time);
 
             // reset integral after overshooting
-            /*overshot = prev_error * error < 0;*/
+            // overshot = signflip(prev_error, error);
             // disable integral after overshooting
             if (signflip(prev_error, error)) overshot = true;
 

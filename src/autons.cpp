@@ -1,4 +1,5 @@
 #include "autons.h"
+#include "chromatic/shorthands.hpp"
 #include "config.h"
 #include "subsystems.h"
 
@@ -54,16 +55,30 @@ void left_side(EncodersIMU &odom, MotionController &pilot) {
     // 38, 27.3, 252º, -15.7, 36.7, +40, 9, -29
     loader.retract();
     body_state = Body::I_STORAGE;
-    pilot.move_by(24,  4000, 30, false);
+    pilot.move_by(20,  2000, 30, true);
+    // loader_state = Pneumatic::EXTENDED;
+    pilot.move_by(7.3,  1000, 30, false);
+    // loader_state = Pneumatic::RETRACTED;
+    // delay_for(200);
+    pilot.turn_to(to_rad(112), 1000, false);
+    pilot.move_by(-14.7, 2000, 20, true);
+    body_state = Body::S_MIDDLE;
+    delay_for(500);
+    body_state = Body::I_STORAGE;
+    pilot.move_by(54, 2000, -1, true);
     loader_state = Pneumatic::EXTENDED;
-    pilot.move_by(14, 4000, -1, false);
-    pilot.move_by(-11.7, 4000, 40, false);
-    pilot.turn_to(to_rad(112), 4000, false);
-    pilot.move_by(-15.7, 4000, 20, false);
-    pilot.move_by(54, 4000, -1, true);
-    pilot.turn_to(to_rad(156), 4000, true);
-    pilot.move_by(9, 4000, 40, true);
-    pilot.move_by(-29, 4000, -1, true);
+    pilot.turn_to(to_rad(156), 750, true);
+    pilot.move_by(10, 750, -1, true);
+    delay_for(1000);
+    pilot.move_by(-30, 2000, -1, true);
+    body_state = Body::S_FULL;
+    delay_for(1000);
+    pilot.move_by(12, 2000, -1, true);
+    pilot.turn_to(to_rad(111), 1000, true);
+    pilot.move_by(-15, 2000, -1, true);
+    pilot.turn_to(to_rad(156), 1000, true);
+    hook_state = Pneumatic::RETRACTED;
+    pilot.move_by(-20, 2000, -1, true);
 }
 
 void right_side(EncodersIMU &odom, MotionController &pilot) {}

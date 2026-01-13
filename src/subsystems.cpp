@@ -17,26 +17,13 @@ void set_body(int cmd_intake, int cmd_storage, int cmd_outtake) {
 void update_body() {
     int ballin = static_cast<int>(lidar.get_distance() < LIDAR_RANGE);
     switch (body_state.load()) {
-    case Body::I_ONLY:
-        set_body(127, 0, 0);
-        break;
-    case Body::I_STORAGE:
-        set_body(127, ballin*40, ballin*4);
-        break;
-    case Body::E_FULL:
-        set_body(-127, -127, -127);
-        break;
-    case Body::S_FULL:
-        set_body(127, 127, 127);
-        break;
-    case Body::S_MIDDLE:
-        set_body(127, 80, -127);
-        break;
-    case Body::S_LOW:
-        set_body(-127, 0, 0);
-        break;
-    case Body::NOTHING:
-        set_body(0, 0, 0);
+    case Body::I_ONLY: set_body(127, 0, 0); break;
+    case Body::I_STORAGE: set_body(127, ballin*40, ballin*4); break;
+    case Body::E_FULL: set_body(-127, -127, -127); break;
+    case Body::S_FULL: set_body(127, 127, 127); break;
+    case Body::S_MIDDLE: set_body(127, 80, -127); break;
+    case Body::S_LOW: set_body(-127, 0, 0); break;
+    case Body::NOTHING: set_body(0, 0, 0);
     }
     switch (hook_state.load()) {
         case Pneumatic::EXTENDED: if (!hook.is_extended()) {hook.extend();} break;

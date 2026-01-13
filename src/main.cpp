@@ -43,7 +43,7 @@ void autonomous() {
     // full_test(odometry, chassis);
     solo_awp(odometry,chassis);
 
-    stop_body();
+    set_body(0, 0, 0);
     odometry.stop_loop();
 
     body_task.join();
@@ -52,7 +52,7 @@ void autonomous() {
 }
 
 void opcontrol() {
-    if (comp_state != CompState::REST) stop_body();
+    if (comp_state != CompState::REST) set_body(0, 0, 0);
     chassis.interrupt();
 
     comp_state = CompState::OPCONTROL;
@@ -84,16 +84,14 @@ void opcontrol() {
 		else if (master.get_digital(L1)) {body_state = Body::E_FULL;}
 		else {body_state = Body::NOTHING;}
 
-        prepare_body();
         update_body();
-        actuate_body();
 
 		delay_for(OP_POLL_RATE);
 	}
 
 	comp_state = CompState::REST;
 
+	set_body(0, 0, 0);
 	odometry.stop_loop();
-
 	odom_task.join();
 }

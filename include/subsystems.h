@@ -12,23 +12,6 @@ extern std::atomic<Body> body_state;
 extern std::atomic<Pneumatic> loader_state;
 extern std::atomic<Pneumatic> hook_state;
 
-// commands to give the actuators
-extern std::atomic<int> intake_cmd;
-extern std::atomic<int> outtake_cmd;
-extern std::atomic<int> storage_cmd;
-extern std::atomic<int> upper_outake;
-extern std::atomic<int> scoring;
-extern std::atomic<ms> filter_until;
-
-void stop_robot();
-void intake_storage_update(const double LIDAR_RANGE, bool slow = false);
-void middle_outtake_update();
-void suck_update();
-void spit_update();
-void full_linear_update(chromatic::SIGN direction);
-
+void set_body(int cmd_intake, int cmd_storage, int cmd_outtake);
 void update_body();
-void prepare_body();
-void actuate_body();
 void run_body(ms pollrate = 10);
-void stop_body();

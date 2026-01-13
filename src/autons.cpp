@@ -83,6 +83,27 @@ void left_side(EncodersIMU &odom, MotionController &pilot) {
 
 void right_side(EncodersIMU &odom, MotionController &pilot) {}
 
-void solo_awp(EncodersIMU &odom, MotionController &pilot) {}
+void solo_awp(EncodersIMU &odom, MotionController &pilot) {
+    // 48, 270º, 14, -31.7
+    // 6.5, 155º, 28, 180º
+    // 46, 220, -17
+    // 52.5, 270º, 10, -31.7
+    pilot.move_by(48, 2000, -1, true);
+    pilot.turn_to(to_rad(270), 1000, true);
+    pilot.move_by(14, 2000, -1, true);
+    pilot.move_by(-31.7, 2000, -1, true);
+    pilot.move_by(6.5, 2000, -1, true);
+    pilot.turn_to(to_rad(155), 1000, true);
+    pilot.move_by(28, 2000, -1, true);
+    pilot.turn_to(to_rad(180), 1000, true);
+    pilot.move_by(46, 2000, -1, true);
+    pilot.turn_to(to_rad(220), 1000, true);
+    pilot.move_by(-17, 2000, -1, true);
+    pilot.move_by(52.5, 2000, -1, true);
+    pilot.turn_to(to_rad(270), 1000, true);
+    pilot.move_by(10, 2000, -1, true);
+    pilot.move_by(-31.7, 2000, -1, true);
+
+}
 
 void skills(EncodersIMU &odom, MotionController &pilot) {}

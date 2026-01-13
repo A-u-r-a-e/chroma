@@ -250,6 +250,10 @@ namespace chromatic {
                 return turn_error;
             };
 
+            auto get_absolute_error = [&] {
+                return mag(localizer.get_pose().pos - target_pose.pos);
+            };
+
             double prev_fwd_error = 0;
             while (!fwd_pid.done() && in_motion) {
                 // mind the signs
@@ -257,14 +261,14 @@ namespace chromatic {
 
                 double fwd_error = get_fwd_error();
                 double turn_error = get_turn_error();
-                bool disable_turn = fabs(fwd_error) <= drivebase.track_width; // prevent swivels when close to target
+                double abs_error = get_absolute_error();
+                bool disable_turn = fabs(abs_error) <= drivebase.track_width; // prevent swivels when close to target
 
                 double fwd = fwd_pid.compute(fwd_error);
                 double turn = turn_pid.compute(turn_error);
 
                 fwd = fwd_slew.update(fwd);
                 turn = turn_slew.update(turn);
-
 
                 if (disable_turn) {
                     turn_pid.reset_integral();
@@ -280,7 +284,7 @@ namespace chromatic {
                     if (fwd_error_flip && in_bounds) {
                         in_motion = false;
                         drivebase.brake();
-                        return get_fwd_error();
+                        return get_absolute_error();
                     }
                 }
 
@@ -303,7 +307,7 @@ namespace chromatic {
 
             drivebase.brake();
             in_motion = false;
-            return get_fwd_error();
+            return get_absolute_error();
         }
 
         // turn to some target radian angle with either specified direction or closest (default), custom timeout (-1 for no timeout) and mono-movement for motion-chaining
@@ -362,7 +366,6 @@ namespace chromatic {
                 drivebase.command_velocities(0, turn);
 
                 prev_error = error;
-                std::cout << "Turn Angle: " << error << "\n";
                 delay_for(pollrate);
             }
 

@@ -93,6 +93,7 @@ namespace chromatic {
     private:
         Differential& drivebase;
         pros::IMU& inertial;
+        const double imu_drift;
 
         double last_ang;
         double last_lin;
@@ -102,8 +103,8 @@ namespace chromatic {
     public:
 
         EncodersIMU(
-            Differential &drivebase, pros::IMU &inertial):
-            drivebase(drivebase), inertial(inertial)
+            Differential &drivebase, pros::IMU &inertial, double imu_drift):
+            drivebase(drivebase), inertial(inertial), imu_drift(imu_drift)
         {
             calibrated = false;
             last_ang = 0;
@@ -134,11 +135,11 @@ namespace chromatic {
                 double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * drivebase.get_ticks_per_wheel_rev());
 
                 Vec dpos{lin - last_lin, 0};
-                double dang = ang - last_ang;
+                double dang = (ang - last_ang);
                 double dt = now() - last_time;
 
                 if (dt > 0) {
-                    integrate(dpos, dang, dt);
+                    integrate(dpos, imu_drift * dang, dt);
                     last_ang = ang;
                     last_lin = lin;
                     last_time = now();

@@ -21,8 +21,9 @@ void update_body() {
     case Body::I_STORAGE: set_body(127, ballin*40, ballin*4); break;
     case Body::E_FULL: set_body(-127, -127, -127); break;
     case Body::S_FULL: set_body(127, 127, 127); break;
-    case Body::S_MIDDLE: set_body(127, 80, -127); break;
+    case Body::S_MIDDLE: set_body(127, 100, -127); break;
     case Body::S_LOW: set_body(-127, 0, 0); break;
+    case Body::M_REFRESH: set_body(0, -127, -80); break;
     case Body::NOTHING: set_body(0, 0, 0);
     }
     switch (hook_state.load()) {

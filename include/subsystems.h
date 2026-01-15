@@ -4,7 +4,7 @@
 #include "config.h"
 
 enum struct CompState{REST, AUTON, OPCONTROL};
-enum struct Body{NOTHING, I_ONLY, I_STORAGE, E_FULL, S_MIDDLE, S_LOW, S_FULL};
+enum struct Body{NOTHING, I_ONLY, I_STORAGE, E_FULL, S_MIDDLE, S_LOW, S_FULL, M_REFRESH};
 enum struct Pneumatic{RETRACTED, EXTENDED};
 
 extern std::atomic<CompState> comp_state;

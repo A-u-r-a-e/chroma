@@ -26,18 +26,16 @@ ms op_pollrate = 10;
 
 Differential drivebase(left_mg, right_mg, 2.75, 0.4, 13, 0.5);
 
-EncodersIMU odometry(drivebase, inertial);
-// 6 0 0.8
+EncodersIMU odometry(drivebase, inertial, 1);
 PID fwd_pid(
     6, 0.01, 0.275, 5,
-    SettleCondition(0.1, 50), SettleCondition(0.5, 200),
+    SettleCondition(0.1, 50), SettleCondition(0.5, 100),
     10, 25, 50
 );
-// 6 0.1 0.3
 PID turn_pid(
-    6, 0.025, 0.275, to_rad(30),
-    SettleCondition(to_rad(1), 100), SettleCondition(to_rad(4), 200),
-    PI / 2, 2*PI, 8*PI
+    7.1, 0.3, 0.280, to_rad(60),
+    SettleCondition(to_rad(1), 50), SettleCondition(to_rad(2), 100),
+    2*PI, 2*PI, 8*PI
 );
 
 MotionController chassis(drivebase, odometry, fwd_pid, turn_pid, SlewRate{MAX_ACC}, SlewRate{MAX_ALPHA});

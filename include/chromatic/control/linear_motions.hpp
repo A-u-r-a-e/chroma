@@ -5,7 +5,6 @@
 #include "chromatic/core.hpp"
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
-#include <cmath>
 
 namespace chromatic {
 
@@ -262,7 +261,7 @@ namespace chromatic {
                 double fwd_error = get_fwd_error();
                 double turn_error = get_turn_error();
                 double abs_error = get_absolute_error();
-                bool disable_turn = fabs(abs_error) <= drivebase.track_width; // prevent swivels when close to target
+                bool disable_turn = fabs(fwd_error) <= drivebase.track_width; // prevent swivels when close to target
 
                 double fwd = fwd_pid.compute(fwd_error);
                 double turn = turn_pid.compute(turn_error);
@@ -369,9 +368,15 @@ namespace chromatic {
                 delay_for(pollrate);
             }
 
+            double final_error = true_error();
+
+            // if (turn_pid.settled()) {
+            //     localizer.set_pose(PoseV{localizer.get_pose().pos, target_radians+localizer.get_pose()});
+            // }
+
             drivebase.brake();
             in_motion = false;
-            return true_error();
+            return final_error;
         }
 
         // turn by some amount with a direction (cannot be EITHER, will exit), custom timeout (-1 for no timeout), and mono-movement for motion-chaining

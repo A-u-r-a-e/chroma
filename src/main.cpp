@@ -24,23 +24,6 @@ void initialize() {
 
 	odometry.calibrate();
 	odometry.set_posev(PoseV{});
-
-	// comp_state = CompState::REST;
-	// while (comp_state == CompState::REST && !master.get_digital_new_press(BX)) {
-	//     switch (auton_select) {
-	// 	case RED_SOLO: master.print(0, 0, "RED SOLO"); break;
-	// 	case BLUE_SOLO: master.print(0, 0, "BLUE SOLO"); break;
-	// 	case RED_LEFT: master.print(0, 0, "RED LEFT"); break;
-	// 	case RED_RIGHT: master.print(0, 0, "RED RIGHT"); break;
-	// 	case BLUE_LEFT: master.print(0, 0, "BLUE LEFT"); break;
-	// 	case BLUE_RIGHT: master.print(0, 0, "BLUE RIGHT"); break;
-	// 	case TURNTEST: master.print(0, 0, "TURNTEST"); break;
-	// 	case DRIVETEST: master.print(0, 0, "DRIVETEST"); break;
-	// 	case SKILLS: master.print(0, 0, "SKILLS"); break;
-	// 	}
-
-	// 	if (master.get_digital_new_release(BA)) auton_select = static_cast<autons>((static_cast<int>(auton_select) + 1)%9);
-	// }
 }
 
 void disabled() {}
@@ -69,8 +52,6 @@ void autonomous() {
         default: break;
     }
 
-    // chassis.turn_to(to_rad(90), 4000, false);
-    // chassis.turn_to(to_rad(0), 4000, false);
     delay_for(10000);
 
     set_body(0, 0, 0);

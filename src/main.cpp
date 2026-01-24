@@ -8,7 +8,7 @@
 
 using namespace chromatic;
 
-enum autons {RED_SOLO, RED_SOLO_LONG, BLUE_SOLO, BLUE_SOLO_LONG, RED_LEFT, RED_RIGHT, BLUE_LEFT, BLUE_RIGHT, SKILLS, TURNTEST, DRIVETEST} auton_select{RED_SOLO};
+enum autons {SOLO, LEFT, RIGHT, SKILLS, DRIVE, TURN, CIRCLE} auton_select{SOLO};
 
 void initialize() {
 	pros::lcd::initialize();
@@ -19,7 +19,7 @@ void initialize() {
 	intake.set_brake_mode(BRAKE);
 	outtake.set_brake_mode(BRAKE);
 
-	hook.extend();
+	hook.retract();
 	loader.retract();
 
 	odometry.calibrate();
@@ -39,27 +39,25 @@ void autonomous() {
 
     chassis.set_pollrate(auton_pollrate);
 
-    auton_select = RED_SOLO_LONG;
+
+
+
+    auton_select = LEFT;
 
     switch (auton_select) {
-        case TURNTEST: turn_test(odometry, chassis); break;
-        case DRIVETEST: drive_test(odometry, chassis); break;
-        case RED_LEFT: red_left_side(odometry, chassis); break;
-        case BLUE_LEFT: blue_left_side(odometry, chassis); break;
-        case RED_SOLO: red_solo_awp(odometry, chassis); break;
-        case BLUE_SOLO: blue_solo_awp(odometry, chassis); break;
-        case RED_SOLO_LONG: red_solo_long(odometry, chassis); break;
+        case LEFT: left_6_1(odometry, chassis); break;
+        case SOLO: solo_autism(odometry, chassis); break;
+        case SKILLS: skills(odometry, chassis); break;
         default: break;
     }
 
-    delay_for(10000);
 
     set_body(0, 0, 0);
     odometry.stop_loop();
+    comp_state = CompState::REST;
 
     body_task.join();
     odom_task.join();
-    comp_state = CompState::REST;
 }
 
 void opcontrol() {
@@ -77,7 +75,7 @@ void opcontrol() {
 		int fwd = master.get_analog(LY);
 		int turn = master.get_analog(RX);
 
-		master.print(0, 0, "body: %d", static_cast<int>(body_state.load()));
+		// master.print(0, 0, "body: %d", static_cast<int>(body_state.load()));
 
 		if (abs(fwd)+abs(turn) != 0) {
 		    chassis.override_arcade(fwd, turn);
@@ -85,8 +83,11 @@ void opcontrol() {
 		    chassis.override_brake();
 		}
 
+		damp_out = master.get_digital(BX);
+
 		if (master.get_digital_new_press(BB)) hook_state = (hook_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
 		if (master.get_digital_new_press(BA)) loader_state = (loader_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
+
 
 		if (master.get_digital(R2)) {body_state = Body::I_STORAGE;}
 		else if (master.get_digital(AD)) {body_state = Body::S_MIDDLE;}

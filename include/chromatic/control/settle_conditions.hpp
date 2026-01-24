@@ -19,7 +19,7 @@ namespace chromatic {
         ):
             settle_range(settle_range), settle_duration(settle_duration)
         {
-            settling_since = INT32_MAX;
+            settling_since = -1;
             settling = false;
             last_update = now();
 
@@ -27,7 +27,7 @@ namespace chromatic {
 
         // evaluate if settled (based on updates and stuff)
         inline bool operator()() const {
-            return (settling && last_update - settling_since >= settle_duration);
+            return (settling && settling_since > 0 && last_update - settling_since >= settle_duration);
         }
 
         // gets if the error was in range last update
@@ -40,7 +40,7 @@ namespace chromatic {
             bool in_range = fabs(error) < settle_range;
 
             if (!settling && in_range) settling_since = cur_time;
-            if (!in_range) settling_since = INT32_MAX;
+            if (!in_range) settling_since = -1;
 
             settling = in_range;
             last_update = cur_time;
@@ -48,7 +48,7 @@ namespace chromatic {
 
         // reset the settle condition for a new motion
         inline void reset() {
-            settling_since = INT32_MAX;
+            settling_since = -1;
             settling = false;
             last_update = now();
         }

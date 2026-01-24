@@ -149,6 +149,17 @@ namespace chromatic {
     }
 
     /**
+     * @brief wrapper of std::signbit for ease of use
+     *
+     * @param a the value to check
+     *
+     * @return -1 or 1
+     */
+    inline int sign(double x) {
+        return (std::signbit(x) ? -1 : 1);
+    }
+
+    /**
      * @brief Use for denominators that may be zero
      *
      * @param x the denom
@@ -158,6 +169,19 @@ namespace chromatic {
      */
     inline double nozero(double x) {
         return std::copysign(sqrt(pow(x, 2) + 0.0001), x);
+    }
+
+    /**
+     * @brief Linear Interpolation
+     *
+     * @param a the first value/origin value
+     * @param b the second value/target value
+     * @param t the amount value/progress value
+     *
+     * @return the lerp
+     */
+    inline double lerp(double a, double b, double t) {
+        return a * (1 - t) + b * t;
     }
 
 }

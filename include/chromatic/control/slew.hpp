@@ -22,8 +22,8 @@ namespace chromatic {
         }
 
         // reset slew limit
-        void ready() {
-            last_slew = 0;
+        void ready(double prev = 0) {
+            last_slew = prev;
             last_update = now();
         }
 

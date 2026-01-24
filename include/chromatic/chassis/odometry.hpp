@@ -103,7 +103,7 @@ namespace chromatic {
     public:
 
         EncodersIMU(
-            Differential &drivebase, pros::IMU &inertial, double imu_drift):
+            Differential &drivebase, pros::IMU &inertial, double imu_drift = 1):
             drivebase(drivebase), inertial(inertial), imu_drift(imu_drift)
         {
             calibrated = false;

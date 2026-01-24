@@ -8,7 +8,7 @@
 
 using namespace chromatic;
 
-enum autons {SOLO, LEFT, RIGHT, SKILLS, DRIVE, TURN, CIRCLE} auton_select{SOLO};
+enum autons {SOLO, LEFT, RIGHT, SKILLS, DRIVE, TURN, CIRCLE, TUNE} auton_select{SOLO};
 
 void initialize() {
 	pros::lcd::initialize();
@@ -39,15 +39,16 @@ void autonomous() {
 
     chassis.set_pollrate(auton_pollrate);
 
-
-
-
-    auton_select = LEFT;
+    auton_select = TUNE;
 
     switch (auton_select) {
-        case LEFT: left_6_1(odometry, chassis); break;
-        case SOLO: solo_autism(odometry, chassis); break;
+        case LEFT: left_both(odometry, chassis); break;
+        case SOLO: solo_double(odometry, chassis); break;
         case SKILLS: skills(odometry, chassis); break;
+        case DRIVE: drive_test(odometry, chassis); break;
+        case TURN: turn_test(odometry, chassis); break;
+        case CIRCLE: circle_drive(odometry, chassis); break;
+        case TUNE: drive_test(odometry, chassis); turn_test(odometry, chassis); break;
         default: break;
     }
 

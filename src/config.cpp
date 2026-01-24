@@ -26,17 +26,19 @@ pros::Optical light(10);
 
 using namespace chromatic;
 
+Differential drivebase(left_mg, right_mg, 3.25, (48.0/72.0), (0.5*(28.0-2.0*2.0)), 0.5);
 
-Differential drivebase(left_mg, right_mg, 2.75, 0.4, 13, 0.5);
-
-EncodersIMU odometry(drivebase, inertial, 1);
+EncodersIMU odometry(drivebase, inertial);
 PID fwd_pid(
-    6, 0.03, 0.275, 5,
+    // 6, 0.03Z, 0.275, 5
+    6, 0, 0, 0,
     SettleCondition(0.1, 50), SettleCondition(0.3, 100),
     10, 25, 50
 );
+
 PID turn_pid(
-    7.1, 0.5, 0.280, to_rad(60),
+    // 7.1 0.5 0.280, to_rad(60)
+    7, 0, 0, to_rad(0),
     SettleCondition(to_rad(1), 50), SettleCondition(to_rad(2), 100),
     2*PI, 2*PI, 8*PI
 );

@@ -50,7 +50,7 @@ namespace chromatic {
 
             ticks_per_wheel_rev = motor_ticks / motor_wheel_ratio;
 
-            max_speed = max_motor_rpm * motor_wheel_ratio * (2 * PI * wheel_radius) * (1.0 / 60);
+            max_speed = max_motor_rpm * motor_wheel_ratio * (PI * wheel_radius) * (1.0 / 60);
             pros::lcd::print(4, "max speed %f", max_speed);
 
             inch_mvolts = 12000.0 / max_speed;

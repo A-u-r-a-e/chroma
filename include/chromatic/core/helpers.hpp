@@ -1,6 +1,7 @@
 #pragma once
 #include "std.hpp"
 #include "enums.hpp"
+#include <cmath>
 
 namespace chromatic {
 
@@ -45,12 +46,12 @@ namespace chromatic {
     }
 
     /**
-        * @brief Normalize angle for heading
-        *
-        * @param theta the value
-        * @param radians the range of [0, div] to modulo this into
-        * @return double
-        */
+    * @brief Normalize angle for heading
+    *
+    * @param theta the value
+    * @param radians to radians or to degrees
+    * @return double
+    */
     inline double wrap_angle(double theta, bool radians = true) {
         double div = (radians ? 2 * PI : 360);
         return fmod(fmod(theta+div,div)+div, div);
@@ -182,6 +183,14 @@ namespace chromatic {
      */
     inline double lerp(double a, double b, double t) {
         return a * (1 - t) + b * t;
+    }
+
+    inline double expcurve(double amt, double curve, double scale) {
+        if (amt >= scale) return sign(amt)*scale;
+
+        double prog = fabs(amt);
+
+        return sign(amt) * pow(prog / scale, curve) * curve;
     }
 
 }

@@ -46,15 +46,15 @@ void update_body() {
         case Body::S_FULL:
             c_intake = 127;
             c_storage = 127;
-            c_outtake = (damp_out ? 50 : 127);
+            c_outtake = (damp_out ? 20 : 127);
             break;
         case Body::S_MIDDLE:
             c_intake = 127;
             c_storage = 127;
-            c_outtake = (damp_out ? -50 : -127);
+            c_outtake = (damp_out ? -20 : -127);
             break;
         case Body::S_LOW:
-            c_intake = (damp_out ? -50 : -127);
+            c_intake = (damp_out ? -20 : -127);
             c_storage = -40;
             c_outtake = 0;
             break;

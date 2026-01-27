@@ -132,7 +132,7 @@ namespace chromatic {
             while (active && calibrated) {
                 // these values are completely independent from posev
                 double ang = get_imu_rad(inertial);
-                double lin = (2 * PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * drivebase.get_ticks_per_wheel_rev());
+                double lin = (PI * drivebase.wheel_radius) * (average(drivebase.left_mg.get_position_all()) + average(drivebase.right_mg.get_position_all()))/(2 * drivebase.get_ticks_per_wheel_rev());
 
                 Vec dpos{lin - last_lin, 0};
                 double dang = (ang - last_ang);

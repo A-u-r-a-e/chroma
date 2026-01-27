@@ -81,7 +81,7 @@ namespace chromatic {
 
         // this prioritizes fwd over turn [-127, 127], turn is right (cw)
         // good for opcontrol
-        void arcade_drive(double fwd, double turn) {
+        void arcade_drive(int fwd, int turn) {
             left_mg.move(fwd + turn);
             right_mg.move(fwd - turn);
         }

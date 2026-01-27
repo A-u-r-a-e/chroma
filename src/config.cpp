@@ -9,6 +9,7 @@ const double MAX_ACC = 20;
 const double MAX_ALPHA = PI;
 const int STORAGE_SPEED = 60;
 const double LIDAR_RANGE = 70;
+const double DRIVE_CURVE = 1.5;
 
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-11, -6, 7}, pros::MotorGearset::blue, pros::MotorEncoderUnits::counts);
@@ -31,15 +32,17 @@ Differential drivebase(left_mg, right_mg, 3.25, (48.0/72.0), (0.5*(28.0-2.0*2.0)
 EncodersIMU odometry(drivebase, inertial);
 PID fwd_pid(
     // 6, 0.03Z, 0.275, 5
-    6, 0, 0, 0,
-    SettleCondition(0.1, 50), SettleCondition(0.3, 100),
-    10, 25, 50
+
+    // currently slightly underdamped
+    7.3, 0, 0.60, 0,
+    SettleCondition(0.1, 50), SettleCondition(0.3, 500),
+    10, 50, 50
 );
 
 PID turn_pid(
     // 7.1 0.5 0.280, to_rad(60)
-    7, 0, 0, to_rad(0),
-    SettleCondition(to_rad(1), 50), SettleCondition(to_rad(2), 100),
+    8, 0, 0.3, to_rad(0),
+    SettleCondition(to_rad(1), 50), SettleCondition(to_rad(2), 500),
     2*PI, 2*PI, 8*PI
 );
 

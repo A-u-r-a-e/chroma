@@ -1,10 +1,13 @@
 #pragma once
 #include "chromatic/control/slew.hpp"
 #include "chromatic/core/helpers.hpp"
+#include "chromatic/core/vector.hpp"
 #include "chromatic/shorthands.hpp"
 #include "chromatic/core.hpp"
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
+#include "pros/llemu.hpp"
+#include <algorithm>
 
 namespace chromatic {
 
@@ -23,15 +26,48 @@ namespace chromatic {
 
         double last_fwd;
         double last_turn;
+
     public:
 
-
         struct Chain {
-            double range;
-            double min_speed;
-            double next_fwd;
-            double next_turn;
+            double range = -1;
+            double min_speed = 0;
+            double next_fwd = 0;
+            double next_turn = 0;
+
+            Chain(double range = -1, double min_speed = 0, double next_fwd = 0, double next_turn = 0): range(range), min_speed(min_speed), next_fwd(next_fwd), next_turn(next_turn)
+            {};
+
+            enum Motions{FORWARD, BACKWARD, TURN_CCW, TURN_CW} ;
+
+            Chain(double range, double min_speed, Motions next_motion) {
+                this->range = range;
+                this->min_speed = min_speed;
+                switch (next_motion) {
+                case FORWARD: next_fwd = 10; next_turn = 0; break;
+                case BACKWARD: next_fwd = -10; next_turn = 0; break;
+                case TURN_CCW: next_fwd = 0; next_turn = to_rad(20); break;
+                case TURN_CW: next_fwd = 0; next_turn = to_rad(-20); break;
+                }
+            }
+
         };
+
+        struct Prediction {
+        private:
+            Pose target;
+        public:
+            Pose get_pose() {return target;}
+            Vec get_pos() {return target.pos;}
+            double get_heading() {return target.dir;}
+
+            void override_pose(Pose override) {target = override;}
+            void override_pos(Vec pos) {target.pos = pos;}
+            void override_heading(double heading) {target.dir = heading;}
+
+            void project_fwd(double amount) {target = Pose::project(target, amount);}
+            void project_turn(double amount) {target.dir = wrap_angle(target.dir + amount);}
+        } cache;
 
         MotionController(
             Differential &drivebase, EncodersIMU &localizer, PID fwd_pid, PID turn_pid, SlewRate fwd_slew = SlewRate(), SlewRate turn_slew = SlewRate()):
@@ -40,6 +76,7 @@ namespace chromatic {
             in_motion = false;
             last_fwd = 0;
             last_turn = 0;
+            refresh_cache();
             set_pollrate(20);
         }
 
@@ -52,6 +89,11 @@ namespace chromatic {
             last_fwd = 0;
             last_turn = 0;
             in_motion = false;
+        }
+
+        // ready the cache for movements
+        void refresh_cache() {
+            cache.override_pose(localizer.get_pose());
         }
 
         // set pollrate/tickrate
@@ -83,7 +125,7 @@ namespace chromatic {
         }
 
         // command outside motion, this is motor output based
-        inline void override_arcade(double fwd, double turn) {
+        inline void override_arcade(int fwd, int turn) {
             drivebase.arcade_drive(fwd, turn);
         }
 
@@ -98,8 +140,8 @@ namespace chromatic {
         }
 
         // brake outside motion
-        inline void override_brake() {
-            drivebase.brake();
+        inline void override_brake(bool force = false) {
+            drivebase.brake(force);
         }
 
         /* Motion Code Structure Outline
@@ -138,17 +180,29 @@ namespace chromatic {
          * Tick time
          */
 
+        // neat helper function to move forward for a duration of time in milliseconds
+        // specified in terms of inches per second and degrees per second
+        bool drive_for(ms duration, double inch_sec, double deg_sec = 0, bool hard_stop = false) {
+            if (in_motion) return false;
+            in_motion = true;
+            override_velocities(inch_sec, to_rad(deg_sec), false);
+            delay_for(duration);
+            override_brake(hard_stop);
+            refresh_cache();
+            in_motion = false;
+            return true;
+        }
 
-        // drives relative to the current heading by some amount command, returns true if successful
-        // timeout = -1 will simply disable timeout, same as max_speed
-        // mono_move will return the moment the robot has reached the large settle range and crossed the target, does not brake, also ensures that robot motor commands are always in the same direction
-        // ensure_facing will cause the robot to turn to face the original direction if successful settle. if false, will turn extra only if time allots it
-        bool move_by(double amount, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = {-1, 0, 0, 0}) {
+        // drives forward and maintains heading using the turn pid. returns final forwards error
+        // setting timeout or max speed to -1 will disable them
+        // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
+        // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
+        double move_by(double amount, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
             if (in_motion) return amount;
             in_motion = true;
 
-            Pose pre_motion = localizer.get_pose();
-            Pose target_pose = Pose::project(pre_motion, amount);
+            cache.project_fwd(amount);
+            Pose target_pose = cache.get_pose();
 
             fwd_pid.set_timeout(timeout);
             turn_pid.set_timeout(timeout);
@@ -172,7 +226,7 @@ namespace chromatic {
                 // if we're moving backwards we want to face away
                 if (amount < 0) target_facing = wrap_angle(target_facing + PI);
                 double turn_error = calculate_turn(cur_pose.dir, target_facing);
-                return 2*turn_error;
+                return turn_error;
             };
 
             auto get_absolute_error = [&] {
@@ -188,7 +242,7 @@ namespace chromatic {
                 double fwd_error = get_fwd_error();
                 double turn_error = get_turn_error();
                 double abs_error = get_absolute_error();
-                bool disable_turn = fabs(fwd_error) <= drivebase.track_width; // prevent swivels when close to target
+                bool disable_turn = fabs(abs_error) <= drivebase.track_width / 2; // prevent swivels when close to target
 
                 // PID & Slew
                 double fwd = fwd_pid.compute(fwd_error);
@@ -201,6 +255,126 @@ namespace chromatic {
                 if (disable_turn) {
                     turn_pid.reset_integral();
                     turn = 0;
+                } else {
+                    if (amount > 0) fwd = std::max(fwd, 0.0);
+                    else fwd = std::min(fwd, 0.0);
+                }
+
+                if (chainer.range > 0 && fabs(fwd_error) <= chainer.range) {
+                    if (fabs(fwd) < chainer.min_speed) fwd = sign(fwd) * chainer.min_speed;
+
+                    double chain_amt = 1.0 - fabs(fwd_error) / chainer.range;
+                    fwd = lerp(fwd, chainer.next_fwd, chain_amt);
+                    turn = lerp(turn, chainer.next_turn, chain_amt);
+                }
+
+                // exit earlier
+                if (mono_move || chainer.range > 0) {
+                    bool fwd_error_flip = signflip(fwd_error, prev_fwd_error);
+                    bool in_bounds = fwd_pid.get_loose_sc().get_settling();
+
+                    // crossed the threshold and are within a bounds
+                    if (fwd_error_flip && in_bounds) {
+                        in_motion = false;
+                        if (chainer.range < 0) drivebase.brake(); //only brake if not chaining
+                        return prev_fwd_error;
+                    }
+                }
+
+                // Scaling
+                if (max_speed > 0 && fabs(fwd) > 0 && fabs(fwd) > max_speed) {
+                    double ratio = max_speed / fabs(fwd);
+                    fwd *= ratio;
+                    turn *= ratio;
+                }
+
+                // Actuation
+                drivebase.command_velocities(fwd, turn);
+                last_turn = turn;
+                last_fwd = fwd;
+
+                prev_fwd_error = fwd_error;
+                delay_for(pollrate);
+            }
+
+            if (chainer.range < 0) {
+                drivebase.brake();
+                last_fwd = 0;
+                last_turn = 0;
+            }
+
+            in_motion = false;
+            return prev_fwd_error;
+        }
+
+        // drives towards a point using fwd and turn pid. returns final euclidean error
+        // setting timeout or max speed to -1 will disable them
+        // mono_move ensures motor commands are uni-directional near settle by exiting the function once the robot overshoots and lies within settle range
+        // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
+        // this function will cause the cache, which ensures your movement direction, to be the straight line between the current cache point and the target
+        double move_to(Vec target, FACE direction = FACE::FWD, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
+            if (in_motion) return mag(target - localizer.get_pose().pos);
+            in_motion = true;
+
+            cache.override_heading(wrap_angle((target-cache.get_pos()).angle() + (direction==FACE::BACK ? PI : 0)));
+            cache.override_pos(target);
+            Pose target_pose = cache.get_pose();
+
+            fwd_pid.set_timeout(timeout);
+            turn_pid.set_timeout(timeout);
+
+            fwd_pid.reset();
+            turn_pid.reset();
+
+            // support for motion chaining
+            fwd_slew.ready(last_fwd);
+            turn_slew.ready(last_turn);
+
+            auto get_fwd_error = [&] {
+                Vec displacement = target_pose.pos - localizer.get_pose().pos;
+                double component_on_axis = dot(displacement, Vec::Polar(localizer.get_pose().dir));
+                return component_on_axis;
+            };
+
+            auto get_turn_error = [&] {
+                Pose cur_pose = localizer.get_pose();
+                double target_facing = (target_pose.pos - cur_pose.pos).angle();
+                // if we're moving backwards we want to face away
+                if (direction == FACE::BACK) target_facing = wrap_angle(target_facing + PI);
+                double turn_error = calculate_turn(cur_pose.dir, target_facing);
+                return turn_error;
+            };
+
+            auto get_absolute_error = [&] {
+                return mag(localizer.get_pose().pos - target_pose.pos);
+            };
+
+            double prev_fwd_error = 0;
+            while (!fwd_pid.done() && in_motion) {
+                // mind the signs
+                // you might want to set target to 0 so that you feed in negatives values to pid so that the output is positive
+
+                // Error Calculations
+                double fwd_error = get_fwd_error();
+                double turn_error = get_turn_error();
+                double abs_error = get_absolute_error();
+                bool disable_turn = fabs(abs_error) <= drivebase.track_width / 2; // prevent swivels when close to target
+
+                // PID & Slew
+                double fwd = fwd_pid.compute(fwd_error);
+                double turn = turn_pid.compute(turn_error);
+
+                fwd = fwd_slew.update(fwd);
+                turn = turn_slew.update(turn);
+
+                // End Behavior
+                if (disable_turn) {
+                    turn_pid.reset_integral();
+                    turn = 0;
+                } else {
+                    // if we can still turn, don't move backwards
+                    if (direction==FACE::FWD) fwd = std::max(fwd, 0.0);
+                    else fwd = std::min(fwd, 0.0);
                 }
 
                 if (chainer.range > 0 && fabs(fwd_error) <= chainer.range) {
@@ -240,11 +414,6 @@ namespace chromatic {
                 delay_for(pollrate);
             }
 
-            // ms time_remaining = fwd_pid.time_left();
-            // if (ensure_facing && fwd_pid.settled() && time_remaining > 0) {
-            //     turn_to(pre_motion.dir, time_remaining, false);
-            // }
-
             if (chainer.range < 0) {
                 drivebase.brake();
                 last_fwd = 0;
@@ -255,18 +424,23 @@ namespace chromatic {
             return get_absolute_error();
         }
 
-        // turn to some target radian angle with either specified direction or closest (default), custom timeout (-1 for no timeout) and mono-movement for motion-chaining
-        // mono movement will cause turn to exit if we've crossed the moment we cross the target
-        double turn_to(double target_radians, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER, Chain chainer = {-1, 0, 0, 0}) {
+        // turn to some target heading in degrees. returns final degrees error
+        // setting timeout to -1 will disable it
+        // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
+        // direction can either be specified or calculated through shortest turning angle
+        // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
+        double turn_to(double heading_deg, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER, Chain chainer = Chain{}) {
+            const double target_radians = to_rad(heading_deg);
+
             auto true_error = [&] {
-                return calculate_turn(target_radians, localizer.get_pose().dir);
+                return calculate_turn(localizer.get_pose().dir,target_radians);
             };
-            if (in_motion) return true_error();
+            if (in_motion) return to_deg(true_error());
             in_motion = true;
 
-            double origin = localizer.get_pose().dir;
-            double target = target_radians;
-            double amount = calculate_turn(origin, target, direction);
+            cache.override_heading(target_radians);
+            double amount = calculate_turn(localizer.get_pose().dir, cache.get_heading(), direction);
+
             bool ignore_direction = false;
 
             turn_pid.set_timeout(timeout);
@@ -281,7 +455,7 @@ namespace chromatic {
 
                 double error = calculate_turn(
                     localizer.get_pose().dir,
-                    target,
+                    cache.get_heading(),
                     (ignore_direction ? DIR::EITHER : direction)
                 );
 
@@ -316,7 +490,7 @@ namespace chromatic {
                     if (error_flip && in_bounds) {
                         in_motion = false;
                         if (chainer.range < 0) drivebase.brake();
-                        return true_error();
+                        return to_deg(true_error());
                     }
                 }
 
@@ -338,7 +512,18 @@ namespace chromatic {
             }
 
             in_motion = false;
-            return final_error;
+            return to_deg(final_error);
+        }
+
+        // turn to face some target position. returns final degrees error
+        // setting timeout to -1 will disable it
+        // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
+        // direction can either be specified or calculated through shortest turning angle
+        // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
+        double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER, Chain chainer = Chain{}) {
+            Vec cur_pos = localizer.get_pose().pos;
+            double facing_heading = wrap_angle(to_deg((target - cur_pos).angle()) + (face==FACE::BACK ? 180 : 0), false);
+            return turn_to(facing_heading, timeout, mono_move, direction, chainer);
         }
 
     };

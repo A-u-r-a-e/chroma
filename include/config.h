@@ -8,6 +8,7 @@ extern const double MAX_ACC;
 extern const double MAX_ALPHA;
 extern const int STORAGE_SPEED;
 extern const double LIDAR_RANGE;
+extern const double DRIVE_CURVE;
 
 extern const ms auton_pollrate;
 extern const ms op_pollrate;

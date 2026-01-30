@@ -198,6 +198,8 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         double move_by(double amount, ms timeout = -1, bool mono_move = false, double max_speed = -1, Chain chainer = Chain{}) {
+            const bool do_chain = chainer.range > 0;
+
             if (in_motion) return amount;
             in_motion = true;
 
@@ -260,7 +262,7 @@ namespace chromatic {
                     else fwd = std::min(fwd, 0.0);
                 }
 
-                if (chainer.range > 0 && fabs(fwd_error) <= chainer.range) {
+                if (do_chain && fabs(fwd_error) <= chainer.range) {
                     if (fabs(fwd) < chainer.min_speed) fwd = sign(fwd) * chainer.min_speed;
 
                     double chain_amt = 1.0 - fabs(fwd_error) / chainer.range;
@@ -269,14 +271,14 @@ namespace chromatic {
                 }
 
                 // exit earlier
-                if (mono_move || chainer.range > 0) {
-                    bool fwd_error_flip = signflip(fwd_error, prev_fwd_error);
+                if (mono_move || do_chain) {
+                    bool progress_condition = do_chain || signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
                     // crossed the threshold and are within a bounds
-                    if (fwd_error_flip && in_bounds) {
+                    if (progress_condition && in_bounds) {
                         in_motion = false;
-                        if (chainer.range < 0) drivebase.brake(); //only brake if not chaining
+                        if (!do_chain) drivebase.brake(); //only brake if not chaining
                         return get_fwd_error();
                     }
                 }
@@ -297,7 +299,7 @@ namespace chromatic {
                 delay_for(pollrate);
             }
 
-            if (chainer.range < 0) {
+            if (!do_chain) {
                 drivebase.brake();
                 last_fwd = 0;
                 last_turn = 0;
@@ -314,8 +316,9 @@ namespace chromatic {
         // this function will cause the cache, which ensures your movement direction, to be the straight line between the current cache point and the target
         double move_to(Vec target, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
 
-            this->face_to(target, facing, timeout, true, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
+            this->face_to(target, facing, 1000, true, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
 
+            const bool do_chain = chainer.range > 0;
             if (in_motion) return mag(target - localizer.get_pose().pos);
             in_motion = true;
 
@@ -379,7 +382,7 @@ namespace chromatic {
                     else fwd = std::min(fwd, 0.0);
                 }
 
-                if (chainer.range > 0 && fabs(fwd_error) <= chainer.range) {
+                if (do_chain && fabs(fwd_error) <= chainer.range) {
                     if (fabs(fwd) < chainer.min_speed) fwd = sign(fwd) * chainer.min_speed;
 
                     double chain_amt = 1.0 - fabs(fwd_error) / chainer.range;
@@ -388,14 +391,14 @@ namespace chromatic {
                 }
 
                 // exit earlier
-                if (mono_move || chainer.range > 0) {
-                    bool fwd_error_flip = signflip(fwd_error, prev_fwd_error);
+                if (mono_move || do_chain) {
+                    bool progress_condition = do_chain || signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
                     // crossed the threshold and are within a bounds
-                    if (fwd_error_flip && in_bounds) {
+                    if (progress_condition && in_bounds) {
                         in_motion = false;
-                        if (chainer.range < 0) drivebase.brake(); //only brake if not chaining
+                        if (!do_chain) drivebase.brake(); //only brake if not chaining
                         return get_absolute_error();
                     }
                 }
@@ -416,7 +419,7 @@ namespace chromatic {
                 delay_for(pollrate);
             }
 
-            if (chainer.range < 0) {
+            if (!do_chain) {
                 drivebase.brake();
                 last_fwd = 0;
                 last_turn = 0;
@@ -433,6 +436,7 @@ namespace chromatic {
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         double turn_to(double heading_deg, ms timeout = -1, bool mono_move = false, bool relative = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
             const double target_radians = to_rad(heading_deg);
+            const bool do_chain = chainer.range > 0;
 
             auto true_error = [&] {
                 return calculate_turn(localizer.get_pose().dir,target_radians);
@@ -476,7 +480,7 @@ namespace chromatic {
 
                 turn = turn_slew.update(turn);
 
-                if (chainer.range > 0 && fabs(error) <= chainer.range) {
+                if (do_chain && fabs(error) <= chainer.range) {
                     if (fabs(turn) < chainer.min_speed) turn = sign(turn) * chainer.min_speed;
 
                     double chain_amt = 1.0 - fabs(error) / chainer.range;
@@ -485,13 +489,13 @@ namespace chromatic {
                 }
 
                 // early exit
-                if (mono_move || chainer.range > 0) {
-                    bool error_flip = signflip(error, prev_error);
+                if (mono_move || do_chain) {
+                    bool progress_condition = do_chain || signflip(error, prev_error);
                     bool in_bounds = turn_pid.get_loose_sc().get_settling();
 
-                    if (error_flip && in_bounds) {
+                    if (progress_condition && in_bounds) {
                         in_motion = false;
-                        if (chainer.range < 0) drivebase.brake();
+                        if (!do_chain) drivebase.brake();
                         return to_deg(true_error());
                     }
                 }
@@ -507,7 +511,7 @@ namespace chromatic {
 
             double final_error = true_error();
 
-            if (chainer.range < 0) {
+            if (!do_chain) {
                 drivebase.brake();
                 last_turn = 0;
                 last_fwd = 0;

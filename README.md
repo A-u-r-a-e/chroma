@@ -6,12 +6,10 @@ pros make clean
 pros build-compile-commands
 ```
 
-
-## todos:
-[x] add heading-caching for move_by-s
-- move to point support
-
-* auton selector
-
-# tunings:
-[x] turn should have a stronger kI
+## features
+- move to, move by (linear move to point)
+- turn to, face to (turn to point)
+- position-saving motion caching
+- slew rate acceleration limiting
+- explicit motion chaining
+- asynchronous body state handling

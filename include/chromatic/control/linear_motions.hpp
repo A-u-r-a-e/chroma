@@ -197,7 +197,7 @@ namespace chromatic {
         // setting timeout or max speed to -1 will disable them
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double move_by(double amount, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
+        double move_by(double amount, ms timeout = -1, bool mono_move = false, double max_speed = -1, Chain chainer = Chain{}) {
             if (in_motion) return amount;
             in_motion = true;
 
@@ -277,7 +277,7 @@ namespace chromatic {
                     if (fwd_error_flip && in_bounds) {
                         in_motion = false;
                         if (chainer.range < 0) drivebase.brake(); //only brake if not chaining
-                        return prev_fwd_error;
+                        return get_fwd_error();
                     }
                 }
 
@@ -304,7 +304,7 @@ namespace chromatic {
             }
 
             in_motion = false;
-            return prev_fwd_error;
+            return get_fwd_error();
         }
 
         // drives towards a point using fwd and turn pid. returns final euclidean error
@@ -429,7 +429,7 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // direction can either be specified or calculated through shortest turning angle
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double turn_to(double heading_deg, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER, Chain chainer = Chain{}) {
+        double turn_to(double heading_deg, ms timeout = -1, bool mono_move = false, bool relative = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
             const double target_radians = to_rad(heading_deg);
 
             auto true_error = [&] {
@@ -511,6 +511,10 @@ namespace chromatic {
                 last_fwd = 0;
             }
 
+            if (relative) {
+                cache.override_pos(localizer.get_pose().pos);
+            }
+
             in_motion = false;
             return to_deg(final_error);
         }
@@ -520,10 +524,10 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // direction can either be specified or calculated through shortest turning angle
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, bool mono_move = false, DIR direction = DIR::EITHER, Chain chainer = Chain{}) {
+        double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, bool mono_move = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
             Vec cur_pos = localizer.get_pose().pos;
             double facing_heading = wrap_angle(to_deg((target - cur_pos).angle()) + (face==FACE::BACK ? 180 : 0), false);
-            return turn_to(facing_heading, timeout, mono_move, direction, chainer);
+            return turn_to(facing_heading, timeout, mono_move, false, chainer, direction);
         }
 
     };

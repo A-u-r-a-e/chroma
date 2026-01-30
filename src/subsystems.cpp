@@ -59,9 +59,9 @@ void update_body() {
             c_outtake = 0;
             break;
         case Body::M_REFRESH:
-            c_intake = -20;
+            c_intake = -127;
             c_storage = -127;
-            c_outtake = -80;
+            c_outtake = 127;
             break;
         case Body::I_STORAGE:
             c_intake = 127;
@@ -70,7 +70,7 @@ void update_body() {
             break;
         case Body::PREP_SCORE:
             c_intake = 127;
-            c_storage = STORAGE_SPEED * (2.0/3.0);
+            c_storage = STORAGE_SPEED * (3.0/3.0);
             c_outtake = 0;
             sus_outtake = 1;
             break;

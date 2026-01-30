@@ -8,10 +8,10 @@ pros build-compile-commands
 
 
 ## todos:
-- add heading-caching for move_by-s
+[x] add heading-caching for move_by-s
 - move to point support
 
 * auton selector
 
 # tunings:
-- turn should have a stronger kI
+[x] turn should have a stronger kI

@@ -187,12 +187,7 @@ void skills(EncodersIMU &odom, MotionController &pilot) {
     pilot.turn_to(315, 1500, true);
     pilot.move_by(30, 2000, true, -1);
     pilot.turn_to(340, 1500, true);
-    pilot.override_arcade(30, to_rad(20));
-    delay_for(2000);
+    pilot.timed_drive(2000, 30, 20, false);
     loader_state = Pneumatic::EXTENDED;
-    pilot.override_arcade(80, 0);
-    delay_for(1500);
-    pilot.override_brake();
-
-
+    pilot.timed_drive(1500, 80, 0, false);
 }

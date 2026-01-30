@@ -182,7 +182,7 @@ namespace chromatic {
 
         // neat helper function to move forward for a duration of time in milliseconds
         // specified in terms of inches per second and degrees per second
-        bool drive_for(ms duration, double inch_sec, double deg_sec = 0, bool hard_stop = false) {
+        bool timed_drive(ms duration, double inch_sec, double deg_sec = 0, bool hard_stop = false) {
             if (in_motion) return false;
             in_motion = true;
             override_velocities(inch_sec, to_rad(deg_sec), false);
@@ -312,11 +312,13 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional near settle by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         // this function will cause the cache, which ensures your movement direction, to be the straight line between the current cache point and the target
-        double move_to(Vec target, FACE direction = FACE::FWD, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
+        double move_to(Vec target, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
+
+            this->face_to(target, facing, timeout, true, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
+
             if (in_motion) return mag(target - localizer.get_pose().pos);
             in_motion = true;
 
-            cache.override_heading(wrap_angle((target-cache.get_pos()).angle() + (direction==FACE::BACK ? PI : 0)));
             cache.override_pos(target);
             Pose target_pose = cache.get_pose();
 
@@ -340,7 +342,7 @@ namespace chromatic {
                 Pose cur_pose = localizer.get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
-                if (direction == FACE::BACK) target_facing = wrap_angle(target_facing + PI);
+                if (facing == FACE::BACK) target_facing = wrap_angle(target_facing + PI);
                 double turn_error = calculate_turn(cur_pose.dir, target_facing);
                 return turn_error;
             };
@@ -373,7 +375,7 @@ namespace chromatic {
                     turn = 0;
                 } else {
                     // if we can still turn, don't move backwards
-                    if (direction==FACE::FWD) fwd = std::max(fwd, 0.0);
+                    if (facing==FACE::FWD) fwd = std::max(fwd, 0.0);
                     else fwd = std::min(fwd, 0.0);
                 }
 

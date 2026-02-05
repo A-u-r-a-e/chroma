@@ -2,6 +2,19 @@
 #include "api.h"
 #include "chromatic.hpp"
 
+// we keep the function with the enum because it helps with debugging
+extern enum autons {LEFT=0, RIGHT=1, RIGHT_RUSH=2, SKILLS=3, SOLO=4, CIRCLE=5, TUNE=6} auton_select;
+inline const char* get_auton_name(autons auton) {
+    switch (auton) {
+    case LEFT: return "L 1+6";
+    case RIGHT: return "R 0.5+6.5";
+    case RIGHT_RUSH: return "RRush 0+4 ";
+    case SKILLS: return "Skills";
+    case CIRCLE: return "60in Square";
+    case TUNE: return "Tuning";
+    default: return "Unknown";
+    }
+}
 extern const ms OP_POLL_RATE;
 extern const ms STORAGE_TIMEOUT;
 extern const double MAX_ACC;

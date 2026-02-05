@@ -29,6 +29,8 @@ namespace chromatic {
 
     public:
 
+        enum struct Exit {MONO, LOOSE, TIGHT};
+
         struct Chain {
             double range = -1;
             double min_speed = 0;
@@ -197,7 +199,7 @@ namespace chromatic {
         // setting timeout or max speed to -1 will disable them
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double move_by(double amount, ms timeout = -1, bool mono_move = false, double max_speed = -1, Chain chainer = Chain{}) {
+        double move_by(double amount, ms timeout = -1, Exit move_type = Exit::LOOSE, double max_speed = -1, Chain chainer = Chain{}) {
             const bool do_chain = chainer.range > 0;
 
             if (in_motion) return amount;
@@ -236,7 +238,7 @@ namespace chromatic {
             };
 
             double prev_fwd_error = 0;
-            while (!fwd_pid.done() && in_motion) {
+            while (!fwd_pid.done(move_type == Exit::TIGHT) && in_motion) {
                 // mind the signs
                 // you might want to set target to 0 so that you feed in negatives values to pid so that the output is positive
 
@@ -271,7 +273,7 @@ namespace chromatic {
                 }
 
                 // exit earlier
-                if (mono_move || do_chain) {
+                if (move_type == Exit::MONO || do_chain) {
                     bool progress_condition = do_chain || signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
@@ -314,9 +316,9 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional near settle by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         // this function will cause the cache, which ensures your movement direction, to be the straight line between the current cache point and the target
-        double move_to(Vec target, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, bool mono_move = false, Chain chainer = Chain{}) {
+        double move_to(Vec target, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}) {
 
-            this->face_to(target, facing, 1000, true, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
+            this->face_to(target, facing, 1000, Exit::MONO, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
 
             const bool do_chain = chainer.range > 0;
             if (in_motion) return mag(target - localizer.get_pose().pos);
@@ -355,7 +357,7 @@ namespace chromatic {
             };
 
             double prev_fwd_error = 0;
-            while (!fwd_pid.done() && in_motion) {
+            while (!fwd_pid.done(move_type == Exit::MONO) && in_motion) {
                 // mind the signs
                 // you might want to set target to 0 so that you feed in negatives values to pid so that the output is positive
 
@@ -391,7 +393,7 @@ namespace chromatic {
                 }
 
                 // exit earlier
-                if (mono_move || do_chain) {
+                if (move_type == Exit::MONO || do_chain) {
                     bool progress_condition = do_chain || signflip(fwd_error, prev_fwd_error);
                     bool in_bounds = fwd_pid.get_loose_sc().get_settling();
 
@@ -434,7 +436,7 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // direction can either be specified or calculated through shortest turning angle
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double turn_to(double heading_deg, ms timeout = -1, bool mono_move = false, bool relative = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
+        double turn_to(double heading_deg, ms timeout = -1, Exit move_type = Exit::LOOSE, bool relative = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
             const double target_radians = to_rad(heading_deg);
             const bool do_chain = chainer.range > 0;
 
@@ -469,7 +471,7 @@ namespace chromatic {
             };
 
             double prev_error = 0;
-            while (!turn_pid.done() && in_motion) {
+            while (!turn_pid.done(move_type == Exit::TIGHT) && in_motion) {
 
                 // error calculations
                 double error = get_error();
@@ -489,7 +491,7 @@ namespace chromatic {
                 }
 
                 // early exit
-                if (mono_move || do_chain) {
+                if (move_type == Exit::MONO || do_chain) {
                     bool progress_condition = do_chain || signflip(error, prev_error);
                     bool in_bounds = turn_pid.get_loose_sc().get_settling();
 
@@ -530,10 +532,10 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
         // direction can either be specified or calculated through shortest turning angle
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
-        double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, bool mono_move = false, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
+        double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
             Vec cur_pos = localizer.get_pose().pos;
             double facing_heading = wrap_angle(to_deg((target - cur_pos).angle()) + (face==FACE::BACK ? 180 : 0), false);
-            return turn_to(facing_heading, timeout, mono_move, false, chainer, direction);
+            return turn_to(facing_heading, timeout, move_type, false, chainer, direction);
         }
 
     };

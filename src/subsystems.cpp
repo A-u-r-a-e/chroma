@@ -1,6 +1,4 @@
 #include "subsystems.h"
-#include "chromatic/shorthands.hpp"
-#include "config.h"
 
 using namespace chromatic;
 
@@ -14,12 +12,12 @@ std::atomic<ms> loader_unsmash_time{0};
 
 std::atomic<bool> damp_out{false};
 
-void set_body(int cmd_intake, int cmd_storage, int cmd_outtake, bool hold_outtake) {
+void set_body(int cmd_intake, int cmd_storage, int cmd_outtake, int sus_outtake) {
     double volt_rpm = 200.0 / 127.0;
-    outtake.set_brake_mode(hold_outtake ? HOLD : BRAKE);
+    outtake.set_brake_mode(sus_outtake==1 ? HOLD : sus_outtake == -1 ? COAST : BRAKE);
     if (cmd_intake) intake.move(cmd_intake); else intake.brake();
     if (cmd_storage) storage.move_velocity(cmd_storage * volt_rpm); else storage.brake();
-    if (cmd_outtake) outtake.move_velocity(cmd_outtake * volt_rpm); else outtake.brake();
+    if (cmd_outtake) outtake.move(cmd_outtake); else outtake.brake();
 }
 
 void update_body() {
@@ -50,7 +48,7 @@ void update_body() {
             break;
         case Body::S_MIDDLE:
             c_intake = 127;
-            c_storage = 127;
+            c_storage = (auton_select == SKILLS ? 40 : 127);
             c_outtake = (damp_out ? -20 : -127);
             break;
         case Body::S_LOW:
@@ -94,8 +92,8 @@ void update_body() {
     // do the override
     if (override_storage) {
         c_storage = STORAGE_SPEED;
-        c_outtake = 2;
-        sus_outtake = false;
+        c_outtake = -3;
+        sus_outtake = -1;
     }
 
     set_body(c_intake, c_storage, c_outtake, sus_outtake);

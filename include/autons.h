@@ -14,8 +14,8 @@ void left_both(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot)
 
 void right_both(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void solo_single(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
+void right_rush(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
-void solo_double(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
+void solo(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);
 
 void skills(chromatic::EncodersIMU &odom, chromatic::MotionController &pilot);

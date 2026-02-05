@@ -39,14 +39,18 @@ namespace chromatic {
         }
 
         // checks if the pid is settled in either loose or tight
-        inline bool settled() const {
+        inline bool loose() const {
             return (sc_loose() || sc_tight());
         }
 
+        inline bool tight() const {
+            return (sc_tight());
+        }
+
         // checks if the pid has either settled or timed out (if set)
-        inline bool done() const {
+        inline bool done(bool strict = false) const {
             bool failsafe_activated = (timeout >= 0 && sum_time > 0 && time_left() >= timeout);
-            return (failsafe_activated || settled());
+            return (failsafe_activated || (strict ? tight() : loose()));
         }
 
         // check time left in current run, guaranteed to be >= 0

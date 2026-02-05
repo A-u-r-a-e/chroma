@@ -1,13 +1,16 @@
 #include "config.h"
 #include "pros/abstract_motor.hpp"
 
+
+enum autons auton_select{LEFT};
+
 const ms OP_POLL_RATE = 5;
-const ms STORAGE_TIMEOUT = 200;
+const ms STORAGE_TIMEOUT = 500;
 const ms auton_pollrate = 10;
 const ms op_pollrate = 10;
 const double MAX_ACC = 20;
 const double MAX_ALPHA = PI;
-const int STORAGE_SPEED = 60;
+const int STORAGE_SPEED = 80;
 const double LIDAR_RANGE = 70;
 const double DRIVE_CURVE = 1.5;
 
@@ -31,16 +34,16 @@ Differential drivebase(left_mg, right_mg, 3.25, (24.0/23.5)*(48.0/72.0), (12), 0
 
 EncodersIMU odometry(drivebase, inertial);
 PID fwd_pid(
-    7.3,0.2, 0.63, 10,
-    SettleCondition(0.1, 50),
-    SettleCondition(0.7, 150),
+    7.3, 0.2, 0.63, 10,
+    SettleCondition(0.15, 50),
+    SettleCondition(0.25, 150),
     10, 50, 50
 );
 
 PID turn_pid(
     10.8, 2.96, 0.69, to_rad(30),
     SettleCondition(to_rad(1), 50),
-    SettleCondition(to_rad(3), 100),
+    SettleCondition(to_rad(2), 100),
     2*PI, 2*PI, 2.5*PI
 );
 

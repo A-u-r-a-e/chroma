@@ -1,6 +1,12 @@
 #include "main.h"
+#include "config.h"
+#include "liblvgl/llemu.hpp"
 
 using namespace chromatic;
+void switch_auto(){
+    auton_select = static_cast<autons>((auton_select + 1) % 7);
+    master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
+};
 
 void initialize() {
 	pros::lcd::initialize();
@@ -17,13 +23,12 @@ void initialize() {
 	odometry.calibrate();
 	odometry.set_posev(PoseV{});
 
-    auton_select = SKILLS;
+    auton_select = RIGHT;
 
     master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
-    if (master.get_digital_new_press(BY)) {
-        auton_select = static_cast<autons>((auton_select + 1) % 7);
-        master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
-    }
+
+    pros::lcd::register_btn2_cb(switch_auto);
+    if (master.get_digital_new_press(BY)) switch_auto();
 
 
 	master.rumble(".");
@@ -68,6 +73,9 @@ void autonomous() {
 }
 
 void opcontrol() {
+
+    // autonomous();
+
     if (comp_state != CompState::REST) set_body(0, 0, 0);
     chassis.interrupt();
 

@@ -48,17 +48,17 @@ void update_body() {
             break;
         case Body::S_MIDDLE:
             c_intake = 127;
-            c_storage = (auton_select == SKILLS ? 40 : 127);
-            c_outtake = (damp_out ? -20 : -127);
+            c_storage = (auton_select == SKILLS ? 80 : 127);
+            c_outtake = (damp_out || auton_select == SKILLS ? -30 : -127);
             break;
         case Body::S_LOW:
-            c_intake = (damp_out ? -20 : -127);
+            c_intake = (damp_out ? -100 : -127);
             c_storage = -40;
             c_outtake = 0;
             break;
         case Body::M_REFRESH:
-            c_intake = -127;
-            c_storage = -127;
+            c_intake = -80;
+            c_storage = -80;
             c_outtake = 127;
             break;
         case Body::I_STORAGE:

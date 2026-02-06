@@ -5,7 +5,7 @@
 enum autons auton_select{LEFT};
 
 const ms OP_POLL_RATE = 5;
-const ms STORAGE_TIMEOUT = 500;
+const ms STORAGE_TIMEOUT = 200;
 const ms auton_pollrate = 10;
 const ms op_pollrate = 10;
 const double MAX_ACC = 20;

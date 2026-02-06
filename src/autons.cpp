@@ -75,31 +75,36 @@ void left_both(EncodersIMU &odom, MotionController &pilot) {
     body_state = Body::I_STORAGE;
     pilot.move_by(imove_L, 2000, Exit::TIGHT, -1, DRIVE_TO_CCW);
     pilot.turn_to(imove_angle, 800, Exit::LOOSE, false, TURN_TO_FWD);
-    loader_state = Pneumatic::EXTENDED;
+    // loader_state = Pneumatic::EXTENDED;
     pilot.move_by(imove_reset, 2000, Exit::LOOSE, 40, DRIVE_TO_CCW);
 
-    pilot.turn_to(135, 1000, Exit::TIGHT, false);
+    // loader_state = Pneumatic::RETRACTED;
+    pilot.turn_to(130, 1000, Exit::LOOSE, false, TURN_TO_FWD);
     body_state = Body::NOTHING;
     pilot.move_by(-18.2, 1000, Exit::LOOSE, 40);
     body_state = Body::S_MIDDLE;
-    delay_for(250);
-    loader_state = Pneumatic::RETRACTED;
+    delay_for(400);
     body_state = Body::I_STORAGE;
-    pilot.move_by(18.2+25*sqrt(2), 2000, Exit::TIGHT, -1);
+    pilot.move_by(18.2, 2000, Exit::TIGHT, -1, DRIVE_TO_CCW);
+    pilot.turn_to(135, 700, Exit::TIGHT, false, TURN_TO_FWD);
+    pilot.move_by(25*sqrt(2), 2000, Exit::TIGHT, -1);
     loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(180, 2000, Exit::LOOSE, false, TURN_TO_FWD);
-    pilot.move_by(14, 1000);
-    pilot.move_by(-34, 1000);
+    pilot.move_by(13.5, 1000);
+    pilot.move_by(-33.5, 1000);
+    body_state = Body::M_REFRESH;
+    delay_for(350);
     body_state = Body::S_FULL;
     delay_for(1500);
     knock_in(50);
     body_state = Body::NOTHING;
     pilot.move_by(12, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     pilot.turn_to(135, 1000, Exit::LOOSE, false, TURN_TO_BACK);
-    pilot.move_by(-10.5*sqrt(2), 1000, Exit::MONO, -1, DRIVE_TO_CCW);
+    pilot.move_by(-10*sqrt(2), 1000, Exit::MONO, -1, DRIVE_TO_CCW);
     pilot.turn_to(180, 1000, Exit::LOOSE, false, TURN_TO_BACK);
     hook_state = Pneumatic::RETRACTED;
     pilot.move_by(-15, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
+    loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(150, 1000);
 }
 
@@ -118,7 +123,7 @@ void right_both(EncodersIMU &odom, MotionController &pilot) {
     const double imove_dx = 20.5 + 14.5 * cos(PI/6);
     const double imove_dy = 14.5 * sin(PI/6);
 
-    double imove_L = 22.2;
+    double imove_L = 21.5;
     double imove_angle = to_deg(std::atan2(imove_dy, imove_dx - imove_L));
     double imove_reset = imove_dy / sin(to_rad(imove_angle));
 
@@ -131,14 +136,16 @@ void right_both(EncodersIMU &odom, MotionController &pilot) {
 
     pilot.turn_to(45, 1000, Exit::TIGHT, false);
     body_state = Body::NOTHING;
-    pilot.move_by(18.2, 1000, Exit::LOOSE, 40);
+    pilot.move_by(14, 1000, Exit::LOOSE, 40);
+    // damp_out = true;
     body_state = Body::S_LOW;
-    delay_for(500);
+    delay_for(700);
     loader_state = Pneumatic::RETRACTED;
+    // damp_out = false;
     body_state = Body::I_STORAGE;
-    pilot.move_by(-18.2-25*sqrt(2), 2000, Exit::TIGHT, -1);
+    pilot.move_by(-14-25*sqrt(2), 2000, Exit::TIGHT, -1);
     loader_state = Pneumatic::EXTENDED;
-    pilot.turn_to(180, 2000, Exit::LOOSE, false, TURN_TO_FWD);
+    pilot.turn_to(180, 2000, Exit::LOOSE);
     pilot.move_by(14, 1000);
     // delay_for(400);
     pilot.move_by(-34, 1000);
@@ -148,12 +155,13 @@ void right_both(EncodersIMU &odom, MotionController &pilot) {
     delay_for(1500);
     knock_in(40);
     body_state = Body::NOTHING;
-    pilot.move_by(12, 1000, Exit::MONO, -1, DRIVE_TO_CW);
+    pilot.move_by(13, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     pilot.turn_to(135, 1000, Exit::LOOSE, false, TURN_TO_BACK);
-    pilot.move_by(-10.5*sqrt(2), 1000, Exit::MONO, -1, DRIVE_TO_CCW);
+    pilot.move_by(-10.5*sqrt(2), 1000, Exit::LOOSE, -1);
     pilot.turn_to(180, 1000, Exit::LOOSE, false, TURN_TO_BACK);
     hook_state = Pneumatic::RETRACTED;
-    pilot.move_by(-15, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
+    loader_state = Pneumatic::RETRACTED;
+    pilot.move_by(-16, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
     pilot.turn_to(150, 1000);
 }
 void right_rush(EncodersIMU &odom, MotionController &pilot) {
@@ -171,29 +179,28 @@ void right_rush(EncodersIMU &odom, MotionController &pilot) {
     const double imove_dx = 20.5 + 14.5 * cos(PI/6);
     const double imove_dy = 14.5 * sin(PI/6);
 
-    double imove_L = 22.2;
+    double imove_L = 22;
     double imove_angle = to_deg(std::atan2(imove_dy, imove_dx - imove_L));
     double imove_reset = imove_dy / sin(to_rad(imove_angle));
 
     body_state = Body::I_STORAGE;
-    pilot.move_by(imove_L, 2000, Exit::TIGHT, -1, DRIVE_TO_CW);
+    pilot.move_by(imove_L, 1000, Exit::TIGHT, -1, DRIVE_TO_CW);
     pilot.turn_to(360-imove_angle, 800, Exit::LOOSE, false, TURN_TO_FWD);
-    loader_state = Pneumatic::EXTENDED;
-    pilot.move_by(imove_reset, 2000, Exit::LOOSE, 40, DRIVE_TO_CW);
-    loader_state = Pneumatic::RETRACTED;
+    // loader_state = Pneumatic::EXTENDED;
+    pilot.move_by(imove_reset, 1000, Exit::LOOSE, 50, DRIVE_TO_CW);
+    // loader_state = Pneumatic::RETRACTED;
 
     pilot.turn_to(225, 1000, Exit::LOOSE, false, TURN_TO_FWD);
     loader_state = Pneumatic::EXTENDED;
-    pilot.move_by(25*sqrt(2), 2000, Exit::TIGHT, -1);
+    pilot.move_by(25*sqrt(2), 2000, Exit::LOOSE, -1, DRIVE_TO_CW);
     pilot.turn_to(180, 2000, Exit::LOOSE, false, TURN_TO_FWD);
     pilot.move_by(14, 1000);
-    // delay_for(400);
     pilot.move_by(-34, 1000);
     body_state = Body::M_REFRESH;
-    delay_for(300);
+    delay_for(200);
     body_state = Body::S_FULL;
     delay_for(1500);
-    knock_in(40);
+    // knock_in(40);
     body_state = Body::NOTHING;
     pilot.move_by(12, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     pilot.turn_to(135, 1000, Exit::LOOSE, false, TURN_TO_BACK);
@@ -206,32 +213,41 @@ void right_rush(EncodersIMU &odom, MotionController &pilot) {
 
 void solo(EncodersIMU &odom, MotionController &pilot) {
 
-    pilot.move_by(31, 1000, Exit::MONO, -1,
-        {5, 10, 0, to_rad(-30)}
-    );
+    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 50, 0};
+    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
+    const MotionController::Chain DRIVE_TO_CW =  {5, 20, 0, to_rad(-60)};
+    const MotionController::Chain DRIVE_TO_CCW =  {5, 20, 0, to_rad(60)};
+    const MotionController::Chain FWD_SLOWDOWN = {5, 40, 20, 0};
+    const MotionController::Chain BACK_SLOWDOWN = {5, 40, -20, 0};
+    const MotionController::Chain BFWD = {5, 40, -50, 0};
+    const MotionController::Chain FBACK = {5, 40, -50, 0};
+
+    const double OFFSET = 4.0;
+    pilot.move_by(32, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     loader_state = Pneumatic::EXTENDED;
-    pilot.turn_to(270, 1000, Exit::MONO, false,
-        {to_rad(15), to_rad(50), 40, 0}
-    );
-    body_state = Body::PREP_SCORE;
-    pilot.move_by(10.6, 800, Exit::MONO);
-    pilot.move_by(-33.1, 1500, Exit::MONO);
+    pilot.turn_to(270, 1000, Exit::MONO, false, TURN_TO_FWD);
+    body_state = Body::I_STORAGE;
+    pilot.move_by(11, 800, Exit::LOOSE);
+    pilot.move_by(-34.5, 1000, Exit::LOOSE);
     body_state = Body::S_FULL;
-    delay_for(1200);
+    delay_for(800);
     loader_state = Pneumatic::RETRACTED;
-    body_state = Body::PREP_SCORE;
-    pilot.turn_to(170, 1000, Exit::MONO, true);
-    pilot.move_by(9.5, 1000, Exit::MONO);
-    pilot.turn_to(180, 1000, Exit::MONO);
-    pilot.move_by(48+6, 1800, Exit::MONO);
+    pilot.move_by(19, 800, Exit::MONO, -1, DRIVE_TO_CW);
+    pilot.turn_to(135, 600, Exit::MONO, false, TURN_TO_FWD);
+    pilot.move_by(27,800, Exit::MONO, -1, FWD_SLOWDOWN);
+    pilot.move_by(7 - OFFSET*sqrt(2),800, Exit::LOOSE, -1);
+    body_state = Body::I_STORAGE;
+    pilot.turn_to(180, 1000, Exit::LOOSE, false, TURN_TO_FWD);
+    pilot.move_by(54+OFFSET, 1800, Exit::MONO, -1, FBACK);
+    pilot.move_by(-6, 1800, Exit::MONO, -1, DRIVE_TO_CCW);
     loader_state = Pneumatic::EXTENDED;
-    pilot.turn_to(225, 600, Exit::MONO);
-    pilot.move_by(-17, 800, Exit::MONO);
+    pilot.turn_to(220, 600, Exit::MONO, false, TURN_TO_BACK);
+    pilot.move_by(OFFSET*sqrt(2) -17 , 800, Exit::MONO, -1, BFWD);
     body_state = Body::S_MIDDLE;
     delay_for(600);
     body_state = Body::I_STORAGE;
-    pilot.move_by(54.3, 1500, Exit::MONO);
-    pilot.turn_to(270, 600, Exit::MONO);
+    pilot.move_by(50, 1500, Exit::MONO, -1, DRIVE_TO_CCW);
+    pilot.turn_to(270, 600, Exit::MONO, false, TURN_TO_BACK);
     pilot.move_by(-22.5, 1200, Exit::MONO);
     body_state = Body::S_LOW;
     delay_for(300);
@@ -241,14 +257,14 @@ void solo(EncodersIMU &odom, MotionController &pilot) {
 
 void skills(EncodersIMU &odom, MotionController &pilot) {
 
-    const double EXTRA_SPACE = 1.5;
+    const double EXTRA_SPACE = 1.8;
 
     auto store_state = [&] {body_state = Body::PREP_SCORE;};
     auto hold_state = [&] {body_state = Body::NOTHING;};
 
     auto score_then_store = [&](ms dur = 3500) {
         body_state = Body::M_REFRESH;
-        delay_for(350);
+        delay_for(200);
         body_state = Body::S_FULL;
         delay_for(dur);
         body_state = Body::PREP_SCORE;
@@ -274,13 +290,13 @@ void skills(EncodersIMU &odom, MotionController &pilot) {
     pilot.move_by(-10.5, 1000, Exit::MONO);
     loader_state = Pneumatic::RETRACTED;
 
-    pilot.turn_to(45, 2000, Exit::MONO, false, TURN_TO_FWD);
+    pilot.turn_to(45, 1000, Exit::LOOSE, false, TURN_TO_FWD);
     pilot.move_by((12*sqrt(2)+EXTRA_SPACE*sqrt(2)), 2000, Exit::LOOSE, -1, DRIVE_TO_CCW);
-    pilot.turn_to(90, 2000, Exit::MONO, false, TURN_TO_FWD);
+    pilot.turn_to(90, 1000, Exit::LOOSE, false);
     pilot.move_by(24*3-2*EXTRA_SPACE, 2000, Exit::MONO, -1, DRIVE_TO_CCW);
-    pilot.turn_to(135, 2000, Exit::MONO, false, TURN_TO_FWD);
+    pilot.turn_to(135, 1000, Exit::LOOSE, false);
     pilot.move_by((12*sqrt(2)+EXTRA_SPACE*sqrt(2)), 2000, Exit::LOOSE);
-    pilot.turn_to(90, 2000, Exit::MONO, false, TURN_TO_BACK);
+    pilot.turn_to(90, 1000, Exit::LOOSE, false, TURN_TO_BACK);
 
     loader_state = Pneumatic::EXTENDED;
     pilot.move_by(-20.2, 1000, Exit::MONO);
@@ -299,7 +315,6 @@ void skills(EncodersIMU &odom, MotionController &pilot) {
     pilot.move_by(24*4+1.5, 4000, Exit::MONO, -1, DRIVE_TO_CW);
 
     loader_state = Pneumatic::EXTENDED;
-    loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(90, 1000, Exit::MONO, false, TURN_TO_FWD);
     store_state();
     pilot.move_by(19, 1000, Exit::LOOSE);
@@ -307,13 +322,13 @@ void skills(EncodersIMU &odom, MotionController &pilot) {
     pilot.move_by(-11, 2000, Exit::MONO);
     loader_state = Pneumatic::RETRACTED;
 
-    pilot.turn_to(225, 2000, Exit::MONO, false, TURN_TO_FWD);
+    pilot.turn_to(225, 1000, Exit::LOOSE, false, TURN_TO_FWD);
     pilot.move_by((12*sqrt(2)+EXTRA_SPACE*sqrt(2)), 2000, Exit::LOOSE, -1, DRIVE_TO_CCW);
-    pilot.turn_to(270, 2000, Exit::MONO, false, TURN_TO_FWD);
+    pilot.turn_to(270, 1000, Exit::LOOSE, false);
     pilot.move_by(24*3-2*EXTRA_SPACE, 2000, Exit::MONO, -1, DRIVE_TO_CCW);
-    pilot.turn_to(315, 2000, Exit::MONO, false, TURN_TO_FWD);
-    pilot.move_by((12*sqrt(2)+EXTRA_SPACE*sqrt(2)), 2000, Exit::LOOSE, -1);
-    pilot.turn_to(270, 2000, Exit::MONO, false, TURN_TO_BACK);
+    pilot.turn_to(315, 1000, Exit::LOOSE, false);
+    pilot.move_by((12*sqrt(2)+EXTRA_SPACE*sqrt(2)), 2000, Exit::LOOSE);
+    pilot.turn_to(270, 1000, Exit::LOOSE, false, TURN_TO_BACK);
 
     loader_state = Pneumatic::EXTENDED;
     pilot.move_by(-20.7, 1000, Exit::MONO);
@@ -333,8 +348,15 @@ void skills(EncodersIMU &odom, MotionController &pilot) {
     pilot.turn_to(270, 1500, Exit::MONO);
     body_state = Body::S_FULL;
     pilot.move_by(50, 2000);
-    pilot.timed_drive(3000, 60, 0, false);
 
+    // previously just fwd at 60 for 3s
+    pilot.timed_drive(500, 60, 40, false);
+    pilot.timed_drive(500, 60, -40, false);
+    pilot.timed_drive(500, 60, 40, false);
+    pilot.timed_drive(500, 60, -40, false);
+    pilot.timed_drive(500, 60, 40, false);
+    pilot.timed_drive(500, 60, -40, false);
+    pilot.override_brake();
     // pilot.move_by(15, 2000, Exit::MONO, -1);
     // pilot.turn_to(315, 1500, Exit::MONO);
     // pilot.move_by(30, 2000, Exit::MONO, -1);

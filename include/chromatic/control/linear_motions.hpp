@@ -1,12 +1,10 @@
 #pragma once
-#include "chromatic/control/slew.hpp"
-#include "chromatic/core/helpers.hpp"
-#include "chromatic/core/vector.hpp"
 #include "chromatic/shorthands.hpp"
+#include "chromatic/control/slew.hpp"
 #include "chromatic/core.hpp"
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
-#include "pros/llemu.hpp"
+#include "chromatic/control/cubicspline.hpp"
 #include <algorithm>
 
 namespace chromatic {
@@ -51,6 +49,10 @@ namespace chromatic {
                 case TURN_CCW: next_fwd = 0; next_turn = to_rad(20); break;
                 case TURN_CW: next_fwd = 0; next_turn = to_rad(-20); break;
                 }
+            }
+
+            Chain operator*(const double other) {
+                return Chain{range, min_speed, next_fwd * other, next_turn * other};
             }
 
         };
@@ -194,6 +196,29 @@ namespace chromatic {
             in_motion = false;
             return true;
         }
+
+        /*
+        double kayla(CubicSpline path, ms target_duration) {
+
+            double sec_dur = target_duration / 1000.0;
+
+            auto crosstrack_loss = [&](Vec p, double t, int d = 0) {
+
+                Vec e_t = path.evaluate(std::clamp(t, 0.0, 1.0), 0) - p;
+                Vec v_t = path.evaluate(std::clamp(t, 0, 1.0), 1);
+                Vec a_t = path.evaluate(std::clamp(t, 0, 1.0), 2);
+
+                switch (d) {
+                    case 0: return dot(e_t, e_t);
+                    case 1: return 2 * dot(v_t, e_t);
+                    case 2: return 2 * (dot(a_t, e_t) + dot(v_t, v_t));
+                    default: return 0.0;
+                }
+            }
+
+            return 0;
+        }
+         */
 
         // drives forward and maintains heading using the turn pid. returns final forwards error
         // setting timeout or max speed to -1 will disable them

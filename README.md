@@ -13,3 +13,4 @@ pros build-compile-commands
 - slew rate acceleration limiting
 - explicit motion chaining
 - asynchronous body state handling
+- auton selector (basic)

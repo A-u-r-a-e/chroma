@@ -23,7 +23,7 @@ void initialize() {
 	odometry.calibrate();
 	odometry.set_posev(PoseV{});
 
-    auton_select = RIGHT;
+    auton_select = LEFT;
 
     master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
 

@@ -1,15 +1,10 @@
-#include "autons.h"
-#include "chromatic/control/linear_motions.hpp"
-#include "chromatic/core/helpers.hpp"
-#include "chromatic/shorthands.hpp"
-#include "config.h"
-#include "subsystems.h"
+#include "autons.hpp"
 
 using namespace chromatic;
 using Exit = MotionController::Exit;
 
 // please provide the stuff to use
-void drive_test(EncodersIMU &odom, MotionController &pilot) {
+void drive_test(MotionController &pilot) {
     ms prev = now();
     double one = pilot.move_by(48, 3000);
     pros::lcd::print(1, "1: %dms, %f inch", now() - prev, one);
@@ -24,7 +19,7 @@ void drive_test(EncodersIMU &odom, MotionController &pilot) {
     // delay_for(1000);
 }
 
-void turn_test(EncodersIMU &odom, MotionController &pilot) {
+void turn_test(MotionController &pilot) {
     ms prev = now();
     double one = pilot.turn_to(30, 3000);
     pros::lcd::print(4, "1: %dms, %fdeg", now() - prev, one);
@@ -42,7 +37,7 @@ void turn_test(EncodersIMU &odom, MotionController &pilot) {
     pros::lcd::print(7, "4: %dms, %fdeg", now() - prev, four);
 }
 
-void circle_drive(EncodersIMU &odom, MotionController &pilot) {
+void circle_drive(MotionController &pilot) {
     hook_state = Pneumatic::RETRACTED;
     pilot.move_by(60, 3000, Exit::MONO, -1, {6, 20, 0, to_rad(-360)});
     pilot.turn_to(270, 1000, Exit::MONO, false, {to_rad(30), to_rad(90), 40, 0});
@@ -54,7 +49,7 @@ void circle_drive(EncodersIMU &odom, MotionController &pilot) {
     pilot.turn_to(0, 1000, Exit::MONO);
 }
 
-void left_both(EncodersIMU &odom, MotionController &pilot) {
+void left_both(MotionController &pilot) {
     const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
     const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
     const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
@@ -85,9 +80,9 @@ void left_both(EncodersIMU &odom, MotionController &pilot) {
     body_state = Body::S_MIDDLE;
     delay_for(400);
     body_state = Body::I_STORAGE;
-    pilot.move_by(18.2, 1000, Exit::TIGHT, -1, DRIVE_TO_CCW);
-    pilot.turn_to(135, 700, Exit::TIGHT, false, TURN_TO_FWD);
-    pilot.move_by(25.3*sqrt(2), 2000, Exit::TIGHT, -1);
+    pilot.move_by(18.2, 1000, Exit::MONO, -1, DRIVE_TO_CCW);
+    pilot.turn_to(135, 700, Exit::MONO, false, TURN_TO_FWD);
+    pilot.move_by(25.3*sqrt(2), 2000, Exit::LOOSE, -1);
     loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(180, 2000, Exit::LOOSE, false, TURN_TO_FWD);
     pilot.move_by(13.7, 1000);
@@ -107,7 +102,7 @@ void left_both(EncodersIMU &odom, MotionController &pilot) {
     pilot.turn_to(150, 1000);
 }
 
-void right_both(EncodersIMU &odom, MotionController &pilot) {
+void right_both(MotionController &pilot) {
     const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
     const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
     const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
@@ -163,7 +158,7 @@ void right_both(EncodersIMU &odom, MotionController &pilot) {
     pilot.move_by(-16, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
     pilot.turn_to(150, 1000);
 }
-void right_rush(EncodersIMU &odom, MotionController &pilot) {
+void right_rush(MotionController &pilot) {
     const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
     const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
     const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
@@ -210,52 +205,56 @@ void right_rush(EncodersIMU &odom, MotionController &pilot) {
     pilot.turn_to(150, 1000);
 }
 
-void solo(EncodersIMU &odom, MotionController &pilot) {
+void solo(MotionController &pilot) {
 
     const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 50, 0};
     const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
     const MotionController::Chain DRIVE_TO_CW =  {5, 20, 0, to_rad(-60)};
     const MotionController::Chain DRIVE_TO_CCW =  {5, 20, 0, to_rad(60)};
+    const MotionController::Chain SUSF = {15, 40, 40, 0};
+    const MotionController::Chain SUSB = {15, 40, -40, 0};
     const MotionController::Chain FWD_SLOWDOWN = {15, 40, 10, 0};
     const MotionController::Chain BACK_SLOWDOWN = {15, 40, -10, 0};
     const MotionController::Chain BFWD = {5, 40, -50, 0};
     const MotionController::Chain FBACK = {5, 40, -50, 0};
 
-    const double OFFSET = 4.0;
     pilot.move_by(32, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(270, 1000, Exit::MONO, false, TURN_TO_FWD);
     body_state = Body::I_STORAGE;
     pilot.move_by(11, 800, Exit::LOOSE);
-    pilot.move_by(-34.5, 1000, Exit::LOOSE);
-    body_state = Body::S_FULL;
-    delay_for(1000);
-    loader_state = Pneumatic::RETRACTED;
-    pilot.move_by(23, 800, Exit::MONO, -1, DRIVE_TO_CW);
-    pilot.turn_to(135, 600, Exit::MONO, false, TURN_TO_FWD);
-    body_state = Body::I_STORAGE;
-    pilot.move_by(17,800, Exit::LOOSE, -1);
-    loader_state = Pneumatic::EXTENDED;
-    pilot.move_by(13,800, Exit::LOOSE, -1);
-    loader_state = Pneumatic::RETRACTED;
-    pilot.turn_to(145, 600, Exit::LOOSE, false);
-    pilot.move_by(13,800, Exit::LOOSE);
+    pilot.move_by(-28.5, 600, Exit::LOOSE, -1, SUSB);
     body_state = Body::S_LOW;
-    delay_for(1000);
-    body_state = Body::NOTHING;
-    pilot.move_by(-13,-800, Exit::LOOSE, -1, DRIVE_TO_CCW);
+    pilot.move_by(-6.5, 400, Exit::LOOSE);
+    body_state = Body::S_FULL;
+    delay_for(1200);
+
+    loader_state = Pneumatic::RETRACTED;
+    pilot.move_by(11, 800, Exit::TIGHT);
+    pilot.turn_to(145, 600, Exit::LOOSE);
+    body_state = Body::I_STORAGE;
+    pilot.move_by(30,800, Exit::MONO, -1, FBACK);
+    // pilot.move_by(-4 ,800, Exit::LOOSE, -1, DRIVE_TO_CCW);
+
     pilot.turn_to(180, 1000, Exit::LOOSE, false, TURN_TO_FWD);
     body_state = Body::I_STORAGE;
-    pilot.move_by(53+OFFSET, 1800, Exit::MONO, -1, FBACK);
-    pilot.move_by(-5, 1800, Exit::MONO, -1, DRIVE_TO_CCW);
+    pilot.move_by(53, 1800, Exit::MONO, -1);
+    // pilot.move_by(-5, 600, Exit::MONO, -1, DRIVE_TO_CCW);
     loader_state = Pneumatic::EXTENDED;
-    pilot.turn_to(220, 600, Exit::MONO, false, TURN_TO_BACK);
-    pilot.move_by(-15 , 800, Exit::MONO, -1, BFWD);
+    pilot.turn_to(225, 1000, Exit::MONO);
+    pilot.move_by(-15, 1000, Exit::LOOSE, -1);
     body_state = Body::S_MIDDLE;
     delay_for(1200);
+    body_state = Body::I_STORAGE;
+    pilot.move_by(50, 1500, Exit::LOOSE, -1);
+    pilot.turn_to(270, 600, Exit::MONO, false, TURN_TO_BACK);
+    body_state = Body::S_LOW;
+    pilot.move_by(-20, 1000, Exit::LOOSE, -1);
+    body_state = Body::S_FULL;
+    delay_for(1000);
 }
 
-void skills(EncodersIMU &odom, MotionController &pilot) {
+void skills(MotionController &pilot) {
 
     const double EXTRA_SPACE = 1.8;
 

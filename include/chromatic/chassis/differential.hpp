@@ -71,8 +71,10 @@ namespace chromatic {
         void brake(bool force = false) {
             auto lbrake = left_mg.get_brake_mode_all();
             auto rbrake = right_mg.get_brake_mode_all();
-            left_mg.set_brake_mode_all(force ? BRAKE : COAST);
-            right_mg.set_brake_mode_all(force ? BRAKE: COAST);
+            // left_mg.set_brake_mode_all(force ? HOLD : COAST);
+            // right_mg.set_brake_mode_all(force ? HOLD: COAST);
+            left_mg.set_brake_mode_all(HOLD);
+            right_mg.set_brake_mode_all(HOLD);
             left_mg.brake();
             right_mg.brake();
             for (int lmb = 0; lmb < lbrake.size(); lmb++) left_mg.set_brake_mode(lbrake[lmb], lmb);

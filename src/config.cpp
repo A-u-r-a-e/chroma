@@ -1,6 +1,4 @@
-#include "config.h"
-#include "pros/abstract_motor.hpp"
-
+#include "config.hpp"
 
 enum autons auton_select{LEFT};
 
@@ -25,14 +23,14 @@ pros::adi::Pneumatics hook('h', true);
 pros::adi::Pneumatics loader('g', false);
 
 pros::IMU inertial(19);
-pros::Distance lidar(8);
+pros::Distance watcher(8);
 pros::Optical light(10);
 
 using namespace chromatic;
 
 Differential drivebase(left_mg, right_mg, 3.25, (24.0/23.5)*(48.0/72.0), (12), 0.5);
 
-EncodersIMU odometry(drivebase, inertial);
+std::unique_ptr<Odometry> localizer(new EncodersIMU(drivebase, inertial));
 PID fwd_pid(
     7.3, 0.2, 0.63, 10,
     SettleCondition(0.15, 50),
@@ -47,4 +45,4 @@ PID turn_pid(
     2*PI, 2*PI, 2.5*PI
 );
 
-MotionController chassis(drivebase, odometry, fwd_pid, turn_pid, SlewRate{MAX_ACC}, SlewRate{MAX_ALPHA});
+MotionController chassis(drivebase, localizer, fwd_pid, turn_pid, SlewRate{MAX_ACC}, SlewRate{MAX_ALPHA});

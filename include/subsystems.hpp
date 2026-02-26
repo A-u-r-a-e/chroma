@@ -1,7 +1,7 @@
 #pragma once
 #include "api.h"
 #include "chromatic.hpp"
-#include "config.h"
+#include "config.hpp"
 
 enum struct CompState{REST, AUTON, OPCONTROL};
 enum struct Body{NOTHING, I_ONLY, I_STORAGE, E_FULL, S_MIDDLE, S_LOW, S_FULL, M_REFRESH, PREP_SCORE};

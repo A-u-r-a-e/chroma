@@ -6,6 +6,7 @@
 #include "chromatic/control/pid.hpp"
 #include "chromatic/control/cubicspline.hpp"
 #include <algorithm>
+#include <memory>
 
 namespace chromatic {
 
@@ -13,7 +14,7 @@ namespace chromatic {
     struct MotionController {
     private:
         Differential &drivebase;
-        EncodersIMU &localizer;
+        std::unique_ptr<Odometry> &localizer;
         PID fwd_pid, turn_pid;
 
         std::atomic<bool> in_motion;
@@ -54,7 +55,6 @@ namespace chromatic {
             Chain operator*(const double other) {
                 return Chain{range, min_speed, next_fwd * other, next_turn * other};
             }
-
         };
 
         struct Prediction {
@@ -74,7 +74,7 @@ namespace chromatic {
         } cache;
 
         MotionController(
-            Differential &drivebase, EncodersIMU &localizer, PID fwd_pid, PID turn_pid, SlewRate fwd_slew = SlewRate(), SlewRate turn_slew = SlewRate()):
+            Differential &drivebase, std::unique_ptr<Odometry> &localizer, PID fwd_pid, PID turn_pid, SlewRate fwd_slew = SlewRate(), SlewRate turn_slew = SlewRate()):
             drivebase{drivebase}, localizer{localizer}, fwd_pid{fwd_pid}, turn_pid{turn_pid}, fwd_slew{fwd_slew}, turn_slew{turn_slew}
         {
             in_motion = false;
@@ -97,7 +97,7 @@ namespace chromatic {
 
         // ready the cache for movements
         void refresh_cache() {
-            cache.override_pose(localizer.get_pose());
+            cache.override_pose(localizer->get_pose());
         }
 
         // set pollrate/tickrate
@@ -197,29 +197,6 @@ namespace chromatic {
             return true;
         }
 
-        /*
-        double kayla(CubicSpline path, ms target_duration) {
-
-            double sec_dur = target_duration / 1000.0;
-
-            auto crosstrack_loss = [&](Vec p, double t, int d = 0) {
-
-                Vec e_t = path.evaluate(std::clamp(t, 0.0, 1.0), 0) - p;
-                Vec v_t = path.evaluate(std::clamp(t, 0, 1.0), 1);
-                Vec a_t = path.evaluate(std::clamp(t, 0, 1.0), 2);
-
-                switch (d) {
-                    case 0: return dot(e_t, e_t);
-                    case 1: return 2 * dot(v_t, e_t);
-                    case 2: return 2 * (dot(a_t, e_t) + dot(v_t, v_t));
-                    default: return 0.0;
-                }
-            }
-
-            return 0;
-        }
-         */
-
         // drives forward and maintains heading using the turn pid. returns final forwards error
         // setting timeout or max speed to -1 will disable them
         // mono_move ensures motor commands are uni-directional by exiting the function once the robot overshoots and lies within settle range
@@ -244,13 +221,13 @@ namespace chromatic {
             turn_slew.ready(last_turn);
 
             auto get_fwd_error = [&] {
-                Vec displacement = target_pose.pos - localizer.get_pose().pos;
-                double component_on_axis = dot(displacement, Vec::Polar(localizer.get_pose().dir));
+                Vec displacement = target_pose.pos - localizer->get_pose().pos;
+                double component_on_axis = dot(displacement, Vec::Polar(localizer->get_pose().dir));
                 return component_on_axis;
             };
 
             auto get_turn_error = [&] {
-                Pose cur_pose = localizer.get_pose();
+                Pose cur_pose = localizer->get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
                 if (amount < 0) target_facing = wrap_angle(target_facing + PI);
@@ -259,7 +236,7 @@ namespace chromatic {
             };
 
             auto get_absolute_error = [&] {
-                return mag(localizer.get_pose().pos - target_pose.pos);
+                return mag(localizer->get_pose().pos - target_pose.pos);
             };
 
             double prev_fwd_error = 0;
@@ -346,7 +323,7 @@ namespace chromatic {
             this->face_to(target, facing, 1000, Exit::MONO, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
 
             const bool do_chain = chainer.range > 0;
-            if (in_motion) return mag(target - localizer.get_pose().pos);
+            if (in_motion) return mag(target - localizer->get_pose().pos);
             in_motion = true;
 
             cache.override_pos(target);
@@ -363,13 +340,13 @@ namespace chromatic {
             turn_slew.ready(last_turn);
 
             auto get_fwd_error = [&] {
-                Vec displacement = target_pose.pos - localizer.get_pose().pos;
-                double component_on_axis = dot(displacement, Vec::Polar(localizer.get_pose().dir));
+                Vec displacement = target_pose.pos - localizer->get_pose().pos;
+                double component_on_axis = dot(displacement, Vec::Polar(localizer->get_pose().dir));
                 return component_on_axis;
             };
 
             auto get_turn_error = [&] {
-                Pose cur_pose = localizer.get_pose();
+                Pose cur_pose = localizer->get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
                 if (facing == FACE::BACK) target_facing = wrap_angle(target_facing + PI);
@@ -378,7 +355,7 @@ namespace chromatic {
             };
 
             auto get_absolute_error = [&] {
-                return mag(localizer.get_pose().pos - target_pose.pos);
+                return mag(localizer->get_pose().pos - target_pose.pos);
             };
 
             double prev_fwd_error = 0;
@@ -466,13 +443,13 @@ namespace chromatic {
             const bool do_chain = chainer.range > 0;
 
             auto true_error = [&] {
-                return calculate_turn(localizer.get_pose().dir,target_radians);
+                return calculate_turn(localizer->get_pose().dir,target_radians);
             };
             if (in_motion) return to_deg(true_error());
             in_motion = true;
 
             cache.override_heading(target_radians);
-            double amount = calculate_turn(localizer.get_pose().dir, cache.get_heading(), direction);
+            double amount = calculate_turn(localizer->get_pose().dir, cache.get_heading(), direction);
 
             bool ignore_direction = false;
 
@@ -487,7 +464,7 @@ namespace chromatic {
                 if (turn_pid.get_loose_sc().get_settling() && !ignore_direction) ignore_direction = true;
 
                 double error = calculate_turn(
-                    localizer.get_pose().dir,
+                    localizer->get_pose().dir,
                     cache.get_heading(),
                     (ignore_direction ? DIR::EITHER : direction)
                 );
@@ -545,7 +522,7 @@ namespace chromatic {
             }
 
             if (relative) {
-                cache.override_pos(localizer.get_pose().pos);
+                cache.override_pos(localizer->get_pose().pos);
             }
 
             in_motion = false;
@@ -558,13 +535,9 @@ namespace chromatic {
         // direction can either be specified or calculated through shortest turning angle
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         double face_to(Vec target, FACE face = FACE::FWD, ms timeout = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}, DIR direction = DIR::EITHER) {
-            Vec cur_pos = localizer.get_pose().pos;
+            Vec cur_pos = localizer->get_pose().pos;
             double facing_heading = wrap_angle(to_deg((target - cur_pos).angle()) + (face==FACE::BACK ? 180 : 0), false);
             return turn_to(facing_heading, timeout, move_type, false, chainer, direction);
         }
-
     };
-
-
-
 }

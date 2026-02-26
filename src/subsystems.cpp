@@ -1,4 +1,4 @@
-#include "subsystems.h"
+#include "subsystems.hpp"
 
 using namespace chromatic;
 
@@ -21,7 +21,7 @@ void set_body(int cmd_intake, int cmd_storage, int cmd_outtake, int sus_outtake)
 }
 
 void update_body() {
-    const int ping = lidar.get_distance();
+    const int ping = watcher.get_distance();
     const int ballin = static_cast<int>(ping < LIDAR_RANGE);
 
     static ms last_seen = now();
@@ -44,16 +44,16 @@ void update_body() {
         case Body::S_FULL:
             c_intake = 127;
             c_storage = 127;
-            c_outtake = (damp_out ? 20 : 127);
+            c_outtake = 127;
             break;
         case Body::S_MIDDLE:
             c_intake = 127;
-            c_storage = (auton_select == SKILLS ? 80 : 127);
-            c_outtake = (damp_out || auton_select == SKILLS ? -30 : -127);
+            c_storage = 127;
+            c_outtake = (damp_out || auton_select == SKILLS ? -60 : -127);
             break;
         case Body::S_LOW:
-            c_intake = (damp_out ? -100 : -127);
-            c_storage = -40;
+            c_intake = (damp_out || auton_select == SKILLS  ? -100 : -127);
+            c_storage = -80;
             c_outtake = 0;
             break;
         case Body::M_REFRESH:

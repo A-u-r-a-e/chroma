@@ -1,6 +1,4 @@
 #include "main.h"
-#include "config.h"
-#include "liblvgl/llemu.hpp"
 
 using namespace chromatic;
 void switch_auto(){
@@ -20,8 +18,8 @@ void initialize() {
 	hook.retract();
 	loader.retract();
 
-	odometry.calibrate();
-	odometry.set_posev(PoseV{});
+	localizer->calibrate();
+	localizer->set_posev(PoseV{});
 
     auton_select = LEFT;
 
@@ -43,19 +41,19 @@ void autonomous() {
     master.rumble("-");
 
     pros::Task body_task([&]{run_body();});
-    pros::Task odom_task([&]{odometry.localize();});
+    pros::Task odom_task([&]{localizer->localize(10);});
 
     chassis.refresh_cache();
     chassis.set_pollrate(auton_pollrate);
 
     switch (auton_select) {
-        case LEFT: left_both(odometry, chassis); break;
-        case RIGHT: right_both(odometry, chassis); break;
-        case RIGHT_RUSH: right_rush(odometry, chassis); break;
-        case SOLO: solo(odometry, chassis); break;
-        case SKILLS: skills(odometry, chassis); break;
-        case CIRCLE: circle_drive(odometry, chassis); break;
-        case TUNE: /*drive_test(odometry, chassis);*/turn_test(odometry, chassis);break;
+        case LEFT: left_both(chassis); break;
+        case RIGHT: right_both(chassis); break;
+        case RIGHT_RUSH: right_rush(chassis); break;
+        case SOLO: solo(chassis); break;
+        case SKILLS: skills(chassis); break;
+        case CIRCLE: circle_drive(chassis); break;
+        case TUNE: /*drive_test(chassis);*/turn_test(chassis);break;
         default: break;
     }
 
@@ -64,7 +62,7 @@ void autonomous() {
 
 
     delay_for(60000);
-    odometry.stop_loop();
+    localizer->stop_loop();
     comp_state = CompState::REST;
 
     body_task.join();
@@ -82,7 +80,7 @@ void opcontrol() {
     master.rumble(".");
     comp_state = CompState::OPCONTROL;
 
-    pros::Task odom_task([&]{odometry.localize();});
+    pros::Task odom_task([&]{localizer->localize(10);});
 
 	while (true) {
 
@@ -114,6 +112,6 @@ void opcontrol() {
 	comp_state = CompState::REST;
 
 	set_body(0, 0, 0);
-	odometry.stop_loop();
+	localizer->stop_loop();
 	odom_task.join();
 }

@@ -37,9 +37,9 @@
 #pragma once
 #include "api.h"
 #include "chromatic.hpp"
-#include "config.h"
-#include "subsystems.h"
-#include "autons.h"
+#include "config.hpp"
+#include "subsystems.hpp"
+#include "autons.hpp"
 
 /**
  * Prototypes for the competition control tasks are redefined here to ensure

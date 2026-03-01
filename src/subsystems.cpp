@@ -7,11 +7,6 @@ std::atomic<Body> body_state{Body::NOTHING};
 std::atomic<Pneumatic> loader_state{Pneumatic::RETRACTED};
 std::atomic<Pneumatic> hook_state{Pneumatic::EXTENDED};
 
-std::atomic<bool> loader_smashing{false};
-std::atomic<ms> loader_unsmash_time{0};
-
-std::atomic<bool> damp_out{false};
-
 void set_body(int cmd_intake, int cmd_storage, int cmd_outtake, int sus_outtake) {
     double volt_rpm = 200.0 / 127.0;
     outtake.set_brake_mode(sus_outtake==1 ? HOLD : sus_outtake == -1 ? COAST : BRAKE);
@@ -21,12 +16,6 @@ void set_body(int cmd_intake, int cmd_storage, int cmd_outtake, int sus_outtake)
 }
 
 void update_body() {
-    const int ping = watcher.get_distance();
-    const int ballin = static_cast<int>(ping < LIDAR_RANGE);
-
-    static ms last_seen = now();
-    static bool override_storage = false;
-
     // actuation
 
     int c_intake{0}, c_storage{0}, c_outtake{0}, sus_outtake{0};
@@ -49,10 +38,10 @@ void update_body() {
         case Body::S_MIDDLE:
             c_intake = 127;
             c_storage = 127;
-            c_outtake = (damp_out || auton_select == SKILLS ? -60 : -127);
+            c_outtake = (auton_select == SKILLS ? -60 : -127);
             break;
         case Body::S_LOW:
-            c_intake = (damp_out || auton_select == SKILLS  ? -100 : -127);
+            c_intake = (auton_select == SKILLS  ? -100 : -127);
             c_storage = -80;
             c_outtake = 0;
             break;
@@ -63,8 +52,9 @@ void update_body() {
             break;
         case Body::I_STORAGE:
             c_intake = 127;
-            c_storage = 0;
+            c_storage = 127;
             c_outtake = 0;
+            sus_outtake = true;
             break;
         case Body::PREP_SCORE:
             c_intake = 127;
@@ -79,37 +69,7 @@ void update_body() {
             break;
     }
 
-    // State Implementation
-    // if we don't see a block, we don't do storage
-    // if its been over a timeout since we last saw a block during storing,  we don't do storage
-    if (!ballin || now() > last_seen + STORAGE_TIMEOUT) override_storage = false;
-    // if we see a block during storing, we do storage and store the time
-    if (ballin && body_state == Body::I_STORAGE) {
-        override_storage = true;
-        last_seen = now();
-    }
-
-    // do the override
-    if (override_storage) {
-        c_storage = STORAGE_SPEED;
-        c_outtake = -3;
-        sus_outtake = -1;
-    }
-
     set_body(c_intake, c_storage, c_outtake, sus_outtake);
-
-    // loader smashing logic
-    if (loader_smashing) {
-        if (loader_unsmash_time < now()) {
-            loader_smashing = false;
-            loader_state = Pneumatic::RETRACTED;
-        } else {
-            loader_state = Pneumatic::EXTENDED;
-        }
-    }
-
-    master.print(0, 0, "str: %d, %d", static_cast<int>(override_storage), static_cast<int>(body_state != Body::I_STORAGE && now() > last_seen));
-
 
     switch (hook_state.load()) {
         case Pneumatic::EXTENDED: if (!hook.is_extended()) {hook.extend();} break;

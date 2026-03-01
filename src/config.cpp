@@ -28,6 +28,16 @@ pros::Optical light(10);
 
 using namespace chromatic;
 
+// fake ports and sensors
+// sides are both 3.8 offset
+// right front is 0.3inch more than left front
+// when clockwise 45º, right is 37.35-24.3 more than left
+// when anticlockwise 45º, left is 28.3-16.4 more than right
+TOF l_left(3, 5.8, 10);
+TOF l_lfront(4, -2.3, 10);
+TOF l_right(1, 5.85, 10);
+TOF l_rfront(2, -3.2, 10);
+
 Differential drivebase(left_mg, right_mg, 3.25, (24.0/23.5)*(48.0/72.0), (12), 0.5);
 
 std::unique_ptr<Odometry> localizer(new EncodersIMU(drivebase, inertial));

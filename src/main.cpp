@@ -1,4 +1,8 @@
 #include "main.h"
+#include "chromatic/shorthands.hpp"
+#include "config.hpp"
+#include "pros/llemu.hpp"
+#include <atomic>
 
 using namespace chromatic;
 void switch_auto(){
@@ -9,6 +13,7 @@ void switch_auto(){
 void initialize() {
 	pros::lcd::initialize();
 
+	// hardware initialization
 	left_mg.set_brake_mode_all(COAST);
 	right_mg.set_brake_mode_all(COAST);
 	storage.set_brake_mode(BRAKE);
@@ -18,16 +23,19 @@ void initialize() {
 	hook.retract();
 	loader.retract();
 
-	localizer->calibrate();
-	localizer->set_posev(PoseV{});
+	// calibration
+    localizer->calibrate();
+    localizer->set_posev(PoseV{});
 
+    // auton selection
     auton_select = LEFT;
-
+    master.clear();
     master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
-
-    pros::lcd::register_btn2_cb(switch_auto);
     if (master.get_digital_new_press(BY)) switch_auto();
 
+    // tasks
+    pros::Task body_task([&]{run_body();});
+    pros::Task odom_task([&]{localizer->localize(10);});
 
 	master.rumble(".");
 }
@@ -39,9 +47,6 @@ void competition_initialize() {}
 void autonomous() {
     comp_state = CompState::AUTON;
     master.rumble("-");
-
-    pros::Task body_task([&]{run_body();});
-    pros::Task odom_task([&]{localizer->localize(10);});
 
     chassis.refresh_cache();
     chassis.set_pollrate(auton_pollrate);
@@ -62,12 +67,38 @@ void autonomous() {
 
 
     delay_for(60000);
-    localizer->stop_loop();
+    // localizer->stop_loop();
     comp_state = CompState::REST;
-
-    body_task.join();
-    odom_task.join();
     master.rumble("-");
+}
+
+std::atomic<bool> ping{false};
+void ping_loop() {
+    ping = true;
+    int tick = 0;
+    while (ping) {
+        tick = (tick+1)%25;
+
+	    l_lfront.update();
+		l_rfront.update();
+		l_left.update();
+		l_right.update();
+		delay_for(10);
+
+		if (tick==0) {
+            double ping_lfront = l_lfront.get_denoised();
+            double ping_rfront = l_rfront.get_denoised();
+            master.print(0, 0, "Front %.2f %.2f", ping_lfront, ping_rfront);
+            delay_for(20);
+            double ping_left = l_left.get_denoised();
+            double ping_right = l_right.get_denoised();
+            master.print(1, 0, "Sides %.2f %.2f", ping_left, ping_right);
+            delay_for(20);
+		} else {
+		    delay_for(40);
+		}
+
+    }
 }
 
 void opcontrol() {
@@ -80,7 +111,7 @@ void opcontrol() {
     master.rumble(".");
     comp_state = CompState::OPCONTROL;
 
-    pros::Task odom_task([&]{localizer->localize(10);});
+    pros::Task pings(ping_loop);
 
 	while (true) {
 
@@ -92,8 +123,6 @@ void opcontrol() {
 		} else {
 		    chassis.override_brake();
 		}
-
-		damp_out = master.get_digital(BX);
 
 		if (master.get_digital_new_press(BB)) hook_state = (hook_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
 		if (master.get_digital_new_press(BA)) loader_state = (loader_state == Pneumatic::EXTENDED ? Pneumatic::RETRACTED : Pneumatic::EXTENDED);
@@ -113,5 +142,6 @@ void opcontrol() {
 
 	set_body(0, 0, 0);
 	localizer->stop_loop();
-	odom_task.join();
+	ping = false;
+	pings.join();
 }

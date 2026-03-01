@@ -131,11 +131,9 @@ void right_both(MotionController &pilot) {
     pilot.turn_to(45, 1000, Exit::TIGHT, false);
     body_state = Body::NOTHING;
     pilot.move_by(14, 1000, Exit::LOOSE, 40);
-    // damp_out = true;
     body_state = Body::S_LOW;
     delay_for(700);
     loader_state = Pneumatic::RETRACTED;
-    // damp_out = false;
     body_state = Body::I_STORAGE;
     pilot.move_by(-14-25*sqrt(2), 2000, Exit::TIGHT, -1);
     loader_state = Pneumatic::EXTENDED;

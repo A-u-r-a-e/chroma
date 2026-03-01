@@ -1,7 +1,6 @@
 #pragma once
 #include "api.h"
 #include "chromatic.hpp"
-#include <memory>
 
 // we keep the function with the enum because it helps with debugging
 extern enum autons {LEFT=0, RIGHT=1, RIGHT_RUSH=2, SKILLS=3, SOLO=4, CIRCLE=5, TUNE=6} auton_select;
@@ -38,8 +37,12 @@ extern pros::adi::Pneumatics hook;
 extern pros::adi::Pneumatics loader;
 
 extern pros::IMU inertial;
-extern pros::Distance watcher;
 extern pros::Optical light;
+
+extern chromatic::TOF l_lfront;
+extern chromatic::TOF l_rfront;
+extern chromatic::TOF l_left;
+extern chromatic::TOF l_right;
 
 extern chromatic::Differential drivebase;
 extern std::unique_ptr<chromatic::Odometry> localizer;

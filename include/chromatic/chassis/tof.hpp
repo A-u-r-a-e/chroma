@@ -15,7 +15,6 @@ namespace chromatic {
             ms timestamp = now();
         };
     private:
-        const ms UPDATE_PERIOD; // minimum time to wait before collecting new data is effective
         pros::Distance sensor;
         double sensor_dist; // inches!
 
@@ -23,33 +22,39 @@ namespace chromatic {
         std::list<Measurement> cache;
 
         // get raw distance measurement in inches
+        // returns -1 if nothing is detected
         double get_raw() {
             double mm_dist = sensor.get();
+            if (mm_dist == 9999) return -1.0;
             double inch_dist = mm_dist / INCH_PER_MM;
             return inch_dist;
         }
     public:
+        static const ms UPDATE_PERIOD; // minimum time to wait before collecting new data is effective
 
         // create an accuracy-based distance sensor object
         // port is for the hardware
         // sensor_dist is offset on the axis
         // sample size is amount of samples to use when averaging values
-        TOF(uint8_t port, double sensor_dist, int sample_size = 3, const ms update_period = 35) : sensor{port}, sensor_dist{sensor_dist}, sample_size{sample_size}, UPDATE_PERIOD{update_period} {}
+        TOF(uint8_t port, double sensor_dist, int sample_size = 3):
+            sensor{port}, sensor_dist{sensor_dist}, sample_size{sample_size}
+        {}
 
         // tries to update the cache once
         void update() {
-
             if (!cache.empty() && now() - cache.back().timestamp < UPDATE_PERIOD) return;
+            double reading = get_raw();
 
-            double distance = sensor_dist + get_raw();
+            double distance = sensor_dist + reading;
             ms timestamp = now();
 
-            cache.push_back(Measurement{.value=distance});
-            if (cache.size() > sample_size)cache.pop_front();
+            cache.push_back(Measurement{.value=(reading > 0 ? distance : -1)});
+            if (cache.size() > sample_size) cache.pop_front();
         }
 
         // get the current distance
         double get_top() {
+            if (cache.empty()) return -1;
             double distance = cache.back().value;
             return distance;
         }
@@ -57,43 +62,28 @@ namespace chromatic {
         // get most recent denoised data
         double get_denoised() {
             double amount = 0;
+            double count = cache.size();
             for (auto& measurement: cache) {
-                amount += measurement.value;
+                double m = measurement.value;
+                amount += m > 0 ? m : 0;
             }
-
-            amount /= sample_size;
-            return amount;
+            amount /= count;
+            return amount > 0 ? amount : -1;
         }
 
-        // can block, force to get some non moving data
-        // dur is the amount of ms since the bottom of the queue was added
-        // max_delta is the max amount of change in the measurement
-        [[deprecated("deadloop issues, use denoise and updates instead")]]
-        double poll(ms max_dt = 150, double max_delta = 1, ms timeout = 200) {
-            ms real_dt = std::max(max_dt, UPDATE_PERIOD * sample_size);
-
-            auto delta = [&] {
-                double min = 1e9, max = -1;
-                for (auto& measurement: cache) {
-                    double val = measurement.value;
-                    if (val < min) min = val;
-                    if (val > max) max = val;
-                }
-                return max - min;
-            };
-
-            ms pre = now();
-            while (now() - cache.front().timestamp > real_dt || delta() > max_delta) {
-                if (now() - pre >= timeout) break;
-                update();
-                delay_for(UPDATE_PERIOD);
+        // gets the sample variance of the recent data, -1 if no data
+        double get_sample_variance() {
+            double mean = get_denoised();
+            if (mean < 0) return -1;
+            double sum = 0;
+            double count = cache.size();
+            for (auto& measurement: cache) {
+                double m = measurement.value;
+                sum += m > 0 ? pow(m - mean, 2) : 0;
+                if (m < 0) count--;
             }
-
-            return get_denoised();
+            return count > 0 ? sum / count : -1;
         }
-
     };
-
-
 
 }

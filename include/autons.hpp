@@ -3,6 +3,9 @@
 #include "chromatic.hpp"
 #include "config.hpp"
 #include "subsystems.hpp"
+#include "lidar.hpp"
+
+void knock_in(double speed, chromatic::MotionController &pilot);
 
 void drive_test(chromatic::MotionController &pilot);
 

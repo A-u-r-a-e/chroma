@@ -1,8 +1,10 @@
 #include "subsystems.hpp"
+#include "chromatic/core/helpers.hpp"
+#include "chromatic/shorthands.hpp"
+#include "config.hpp"
 
 using namespace chromatic;
 
-std::atomic<CompState> comp_state{CompState::REST};
 std::atomic<Body> body_state{Body::NOTHING};
 std::atomic<Pneumatic> loader_state{Pneumatic::RETRACTED};
 std::atomic<Pneumatic> hook_state{Pneumatic::EXTENDED};
@@ -82,8 +84,9 @@ void update_body() {
 }
 
 void run_body(ms pollrate) {
-    while (comp_state != CompState::REST) {
-        update_body();
+    while (comp_state != CompState::DISABLE) {
+        if (comp_state == CompState::REST) set_body(0, 0, 0, 0);
+        else update_body();
 		delay_for(pollrate);
     }
 }

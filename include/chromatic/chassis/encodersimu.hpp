@@ -40,7 +40,7 @@ namespace chromatic {
         }
 
         // continuously calculate pose and state
-        void localize(ms poll_delay = 10) override {
+        void localize(ms pollrate) override {
             while (!calibrated);
             active = true;
             while (active && calibrated) {
@@ -60,7 +60,7 @@ namespace chromatic {
                 }
                 pros::lcd::print(0, "(%f, %f), %f", this->get_pose().pos.x, this->get_pose().pos.y, to_deg(this->get_pose().dir));
 
-                delay_for(poll_delay);
+                delay_for(pollrate);
             }
         }
     };

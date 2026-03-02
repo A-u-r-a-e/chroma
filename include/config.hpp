@@ -15,6 +15,10 @@ inline const char* get_auton_name(autons auton) {
     default: return "Unknown";
     }
 }
+
+enum struct CompState{REST, AUTON, OPCONTROL, DISABLE};
+extern std::atomic<CompState> comp_state;
+
 extern const ms OP_POLL_RATE;
 extern const ms STORAGE_TIMEOUT;
 extern const double MAX_ACC;
@@ -39,13 +43,38 @@ extern pros::adi::Pneumatics loader;
 extern pros::IMU inertial;
 extern pros::Optical light;
 
-extern chromatic::TOF l_lfront;
-extern chromatic::TOF l_rfront;
-extern chromatic::TOF l_left;
-extern chromatic::TOF l_right;
+extern const chromatic::MotionController::Chain TURN_TO_FWD;
+extern const chromatic::MotionController::Chain TURN_TO_BACK;
+extern const chromatic::MotionController::Chain DRIVE_TO_CW;
+extern const chromatic::MotionController::Chain DRIVE_TO_CCW;
+extern const chromatic::MotionController::Chain SUSF;
+extern const chromatic::MotionController::Chain SUSB;
+extern const chromatic::MotionController::Chain FWD_SLOWDOWN;
+extern const chromatic::MotionController::Chain BACK_SLOWDOWN;
+extern const chromatic::MotionController::Chain BFWD;
+extern const chromatic::MotionController::Chain FBACK;
+
+extern chromatic::TOF tof_lfront;
+extern chromatic::TOF tof_rfront;
+extern chromatic::TOF tof_left;
+extern chromatic::TOF tof_right;
 
 extern chromatic::Differential drivebase;
 extern std::unique_ptr<chromatic::Odometry> localizer;
+extern chromatic::DoubleTOF front_lidar;
+extern chromatic::SingleTOF left_lidar;
+extern chromatic::SingleTOF right_lidar;
+
+extern chromatic::FieldWalls walls;
+extern std::vector<chromatic::FieldElementBox> elements;
+
 extern chromatic::PID fwd_pid;
 extern chromatic::PID turn_pid;
+extern chromatic::PID head_pid;
+extern chromatic::PID swing_pid;
+extern chromatic::SlewRate fwd_slew;
+extern chromatic::SlewRate turn_slew;
+extern chromatic::SlewRate head_slew;
+extern chromatic::SlewRate swing_slew;
+
 extern chromatic::MotionController chassis;

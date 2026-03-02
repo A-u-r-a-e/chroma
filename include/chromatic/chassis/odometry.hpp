@@ -2,11 +2,12 @@
 #include "api.h"
 #include "chromatic/chassis/differential.hpp"
 #include "chromatic/core.hpp"
+#include "chromatic/core/helpers.hpp"
 #include "chromatic/core/vector.hpp"
 #include "chromatic/shorthands.hpp"
-#include <cmath>
 
 namespace chromatic {
+
     struct Odometry {
     protected:
         std::atomic<bool> active{false};
@@ -25,7 +26,7 @@ namespace chromatic {
         }
 
         // theta radians turning, ccw
-        Vec calculate_arc(Vec d_position, double d_theta) {
+        static Vec calculate_arc(Vec d_position, double d_theta) {
             Vec x_transform{
                 d_position.x * sinc(d_theta),
                 d_position.x * cosc(d_theta)
@@ -56,7 +57,17 @@ namespace chromatic {
     public:
 
         virtual void calibrate() = 0;
-        virtual void localize(ms poll_delay) = 0;
+        virtual void localize(ms pollrate) = 0;
+
+        // public facing call to arc drawer
+        static Vec draw_arc(double start_head_deg, double delta_pos_in, double delta_head_deg) {
+            Vec dpos = Vec::Polar(to_rad(start_head_deg), delta_pos_in);
+            double dang = to_rad(delta_head_deg);
+
+            Vec post_arc = calculate_arc(dpos, dang);
+
+            return post_arc;
+        }
 
         // force set the current state (pose and velocities)
         void set_posev(PoseV posev) {

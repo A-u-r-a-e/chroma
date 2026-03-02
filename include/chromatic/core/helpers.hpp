@@ -83,6 +83,15 @@ namespace chromatic {
         return wrapped;
     }
 
+    // angles
+    inline bool within_bounds_periodic(double a, double b, double cur) {
+        if (a > b) {
+            return cur >= a || cur <= b;
+        } else {
+            return cur >= a && cur <= b;
+        }
+    }
+
     /**
      * @brief Find the turning angle needed to achieve end from start. Radians only.
      * @note assumes ccw radians

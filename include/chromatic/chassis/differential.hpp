@@ -81,6 +81,11 @@ namespace chromatic {
             for (int rmb = 0; rmb < rbrake.size(); rmb++) right_mg.set_brake_mode(rbrake[rmb], rmb);
         }
 
+        void reset_brake() {
+            left_mg.set_brake_mode_all(COAST);
+            right_mg.set_brake_mode_all(COAST);
+        }
+
         // this prioritizes fwd over turn [-127, 127], turn is right (cw)
         // good for opcontrol
         void arcade_drive(int fwd, int turn) {
@@ -140,15 +145,36 @@ namespace chromatic {
             double v_left = linear - angular * track_width / 2;
             double v_right = linear + angular * track_width / 2;
 
-            double ratio = max_speed_ratio(v_left,  v_right);
+            command_left_only(v_left, respect_max_speed);
+            command_right_only(v_right, respect_max_speed);
+        }
 
-            if (respect_max_speed && ratio < 1.0) {
-                v_left *= ratio;
-                v_right *= ratio;
+        // command each side of the drivetrain discreetly.
+        void command_left_only(double v_left, bool respect_max_speed) {
+            if (respect_max_speed && fabs(v_left) > max_speed) {
+                v_left = sign(v_left) * max_speed;
             }
 
             left_mg.move_voltage(inch_mvolts * v_left);
+        }
+
+        void command_right_only(double v_right, bool respect_max_speed) {
+            if (respect_max_speed && fabs(v_right) > max_speed) {
+                v_right = sign(v_right) * max_speed;
+            }
+
             right_mg.move_voltage(inch_mvolts * v_right);
+        }
+
+        void command_brake(DIR sides = DIR::EITHER) {
+            left_mg.set_brake_mode_all(HOLD);
+            right_mg.set_brake_mode_all(HOLD);
+            if (sides == DIR::LEFT || sides == DIR::EITHER) {
+                left_mg.brake();
+            }
+            if (sides == DIR::RIGHT || sides == DIR::EITHER) {
+                right_mg.brake();
+            }
         }
     };
 }

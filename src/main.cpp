@@ -2,6 +2,7 @@
 #include "chromatic/shorthands.hpp"
 #include "config.hpp"
 #include "pros/llemu.hpp"
+#include "subsystems.hpp"
 #include <atomic>
 
 using namespace chromatic;
@@ -28,14 +29,16 @@ void initialize() {
     localizer->set_posev(PoseV{});
 
     // auton selection
-    auton_select = LEFT;
+    auton_select = RIGHT;
     master.clear();
     master.print(0, 0, "Auton: %s", get_auton_name(auton_select));
     if (master.get_digital_new_press(BY)) switch_auto();
 
     // tasks
     pros::Task body_task([&]{run_body();});
+    pros::Task dresets_task([&]{run_dresets();});
     pros::Task odom_task([&]{localizer->localize(10);});
+
 
 	master.rumble(".");
 }
@@ -62,56 +65,21 @@ void autonomous() {
         default: break;
     }
 
-
     body_state = Body::NOTHING;
 
-
-    delay_for(60000);
-    // localizer->stop_loop();
     comp_state = CompState::REST;
     master.rumble("-");
-}
-
-std::atomic<bool> ping{false};
-void ping_loop() {
-    ping = true;
-    int tick = 0;
-    while (ping) {
-        tick = (tick+1)%25;
-
-	    l_lfront.update();
-		l_rfront.update();
-		l_left.update();
-		l_right.update();
-		delay_for(10);
-
-		if (tick==0) {
-            double ping_lfront = l_lfront.get_denoised();
-            double ping_rfront = l_rfront.get_denoised();
-            master.print(0, 0, "Front %.2f %.2f", ping_lfront, ping_rfront);
-            delay_for(20);
-            double ping_left = l_left.get_denoised();
-            double ping_right = l_right.get_denoised();
-            master.print(1, 0, "Sides %.2f %.2f", ping_left, ping_right);
-            delay_for(20);
-		} else {
-		    delay_for(40);
-		}
-
-    }
 }
 
 void opcontrol() {
 
     // autonomous();
 
-    if (comp_state != CompState::REST) set_body(0, 0, 0);
     chassis.interrupt();
 
     master.rumble(".");
     comp_state = CompState::OPCONTROL;
-
-    pros::Task pings(ping_loop);
+    drivebase.reset_brake();
 
 	while (true) {
 
@@ -133,15 +101,12 @@ void opcontrol() {
 		else if (master.get_digital(L2)) {body_state = Body::S_FULL;}
 		else if (master.get_digital(L1)) {body_state = Body::E_FULL;}
 		else {body_state = Body::NOTHING;}
-        update_body();
+        // update_body();
 
 		delay_for(OP_POLL_RATE);
 	}
 
-	comp_state = CompState::REST;
-
-	set_body(0, 0, 0);
+	comp_state = CompState::DISABLE;
 	localizer->stop_loop();
-	ping = false;
-	pings.join();
+	delay_for(50);
 }

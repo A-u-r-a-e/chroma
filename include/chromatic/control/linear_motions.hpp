@@ -1,4 +1,6 @@
 #pragma once
+#include "chromatic/chassis/odometry.hpp"
+#include "chromatic/core/helpers.hpp"
 #include "chromatic/shorthands.hpp"
 #include "chromatic/control/slew.hpp"
 #include "chromatic/core.hpp"
@@ -15,13 +17,12 @@ namespace chromatic {
     private:
         Differential &drivebase;
         std::unique_ptr<Odometry> &localizer;
-        PID fwd_pid, turn_pid;
+        PID fwd_pid, turn_pid, head_pid, swing_pid;
 
         std::atomic<bool> in_motion;
         ms pollrate;
 
-        SlewRate fwd_slew;
-        SlewRate turn_slew;
+        SlewRate fwd_slew, turn_slew, head_slew, swing_slew;
 
         double last_fwd;
         double last_turn;
@@ -65,17 +66,17 @@ namespace chromatic {
             Vec get_pos() {return target.pos;}
             double get_heading() {return target.dir;}
 
-            void override_pose(Pose override) {target = override;}
-            void override_pos(Vec pos) {target.pos = pos;}
-            void override_heading(double heading) {target.dir = heading;}
+            void set_pose(Pose override) {target = override;}
+            void set_pos(Vec pos) {target.pos = pos;}
+            void set_heading(double heading) {target.dir = heading;}
 
             void project_fwd(double amount) {target = Pose::project(target, amount);}
             void project_turn(double amount) {target.dir = wrap_angle(target.dir + amount);}
         } cache;
 
         MotionController(
-            Differential &drivebase, std::unique_ptr<Odometry> &localizer, PID fwd_pid, PID turn_pid, SlewRate fwd_slew = SlewRate(), SlewRate turn_slew = SlewRate()):
-            drivebase{drivebase}, localizer{localizer}, fwd_pid{fwd_pid}, turn_pid{turn_pid}, fwd_slew{fwd_slew}, turn_slew{turn_slew}
+            Differential &drivebase, std::unique_ptr<Odometry> &localizer, PID fwd_pid, PID turn_pid, PID head_pid, PID swing_pid, SlewRate fwd_slew = SlewRate(), SlewRate turn_slew = SlewRate(), SlewRate head_slew = SlewRate(), SlewRate swing_slew = SlewRate()):
+            drivebase{drivebase}, localizer{localizer}, fwd_pid{fwd_pid}, turn_pid{turn_pid}, head_pid{head_pid}, swing_pid{swing_pid}, fwd_slew{fwd_slew}, turn_slew{turn_slew}, head_slew{head_slew}, swing_slew{swing_slew}
         {
             in_motion = false;
             last_fwd = 0;
@@ -97,7 +98,7 @@ namespace chromatic {
 
         // ready the cache for movements
         void refresh_cache() {
-            cache.override_pose(localizer->get_pose());
+            cache.set_pose(localizer->get_pose());
         }
 
         // set pollrate/tickrate
@@ -211,14 +212,14 @@ namespace chromatic {
             Pose target_pose = cache.get_pose();
 
             fwd_pid.set_timeout(timeout);
-            turn_pid.set_timeout(timeout);
+            head_pid.set_timeout(timeout);
 
             fwd_pid.reset();
-            turn_pid.reset();
+            head_pid.reset();
 
             // support for motion chaining
             fwd_slew.ready(last_fwd);
-            turn_slew.ready(last_turn);
+            head_slew.ready(last_turn);
 
             auto get_fwd_error = [&] {
                 Vec displacement = target_pose.pos - localizer->get_pose().pos;
@@ -226,13 +227,13 @@ namespace chromatic {
                 return component_on_axis;
             };
 
-            auto get_turn_error = [&] {
+            auto get_head_error = [&] {
                 Pose cur_pose = localizer->get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
                 if (amount < 0) target_facing = wrap_angle(target_facing + PI);
-                double turn_error = calculate_turn(cur_pose.dir, target_facing);
-                return turn_error;
+                double head_error = calculate_turn(cur_pose.dir, target_facing);
+                return head_error;
             };
 
             auto get_absolute_error = [&] {
@@ -246,21 +247,21 @@ namespace chromatic {
 
                 // Error Calculations
                 double fwd_error = get_fwd_error();
-                double turn_error = get_turn_error();
+                double head_error = get_head_error();
                 double abs_error = get_absolute_error();
                 bool disable_turn = fabs(abs_error) <= drivebase.track_width / 2; // prevent swivels when close to target
 
                 // PID & Slew
                 double fwd = fwd_pid.compute(fwd_error);
-                double turn = turn_pid.compute(turn_error);
+                double correction = head_pid.compute(head_error);
 
                 fwd = fwd_slew.update(fwd);
-                turn = turn_slew.update(turn);
+                correction = head_slew.update(correction);
 
                 // End Behavior
                 if (disable_turn) {
-                    turn_pid.reset_integral();
-                    turn = 0;
+                    head_pid.reset_integral();
+                    correction = 0;
                 } else {
                     if (amount > 0) fwd = std::max(fwd, 0.0);
                     else fwd = std::min(fwd, 0.0);
@@ -271,7 +272,7 @@ namespace chromatic {
 
                     double chain_amt = 1.0 - fabs(fwd_error) / chainer.range;
                     fwd = lerp(fwd, chainer.next_fwd, chain_amt);
-                    turn = lerp(turn, chainer.next_turn, chain_amt);
+                    correction = lerp(correction, chainer.next_turn, chain_amt);
                 }
 
                 // exit earlier
@@ -291,12 +292,12 @@ namespace chromatic {
                 if (max_speed > 0 && fabs(fwd) > 0 && fabs(fwd) > max_speed) {
                     double ratio = max_speed / fabs(fwd);
                     fwd *= ratio;
-                    turn *= ratio;
+                    correction *= ratio;
                 }
 
                 // Actuation
-                drivebase.command_velocities(fwd, turn);
-                last_turn = turn;
+                drivebase.command_velocities(fwd, correction);
+                last_turn = correction;
                 last_fwd = fwd;
 
                 prev_fwd_error = fwd_error;
@@ -326,18 +327,18 @@ namespace chromatic {
             if (in_motion) return mag(target - localizer->get_pose().pos);
             in_motion = true;
 
-            cache.override_pos(target);
+            cache.set_pos(target);
             Pose target_pose = cache.get_pose();
 
             fwd_pid.set_timeout(timeout);
-            turn_pid.set_timeout(timeout);
+            head_pid.set_timeout(timeout);
 
             fwd_pid.reset();
-            turn_pid.reset();
+            head_pid.reset();
 
             // support for motion chaining
             fwd_slew.ready(last_fwd);
-            turn_slew.ready(last_turn);
+            head_slew.ready(last_turn);
 
             auto get_fwd_error = [&] {
                 Vec displacement = target_pose.pos - localizer->get_pose().pos;
@@ -345,7 +346,7 @@ namespace chromatic {
                 return component_on_axis;
             };
 
-            auto get_turn_error = [&] {
+            auto get_head_error = [&] {
                 Pose cur_pose = localizer->get_pose();
                 double target_facing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
@@ -365,21 +366,21 @@ namespace chromatic {
 
                 // Error Calculations
                 double fwd_error = get_fwd_error();
-                double turn_error = get_turn_error();
+                double head_error = get_head_error();
                 double abs_error = get_absolute_error();
                 bool disable_turn = fabs(abs_error) <= drivebase.track_width / 2; // prevent swivels when close to target
 
                 // PID & Slew
                 double fwd = fwd_pid.compute(fwd_error);
-                double turn = turn_pid.compute(turn_error);
+                double correction = head_pid.compute(head_error);
 
                 fwd = fwd_slew.update(fwd);
-                turn = turn_slew.update(turn);
+                correction = head_slew.update(correction);
 
                 // End Behavior
                 if (disable_turn) {
-                    turn_pid.reset_integral();
-                    turn = 0;
+                    head_pid.reset_integral();
+                    correction = 0;
                 } else {
                     // if we can still turn, don't move backwards
                     if (facing==FACE::FWD) fwd = std::max(fwd, 0.0);
@@ -391,7 +392,7 @@ namespace chromatic {
 
                     double chain_amt = 1.0 - fabs(fwd_error) / chainer.range;
                     fwd = lerp(fwd, chainer.next_fwd, chain_amt);
-                    turn = lerp(turn, chainer.next_turn, chain_amt);
+                    correction = lerp(correction, chainer.next_turn, chain_amt);
                 }
 
                 // exit earlier
@@ -411,12 +412,12 @@ namespace chromatic {
                 if (max_speed > 0 && fabs(fwd) > 0 && fabs(fwd) > max_speed) {
                     double ratio = max_speed / fabs(fwd);
                     fwd *= ratio;
-                    turn *= ratio;
+                    correction *= ratio;
                 }
 
                 // Actuation
-                drivebase.command_velocities(fwd, turn);
-                last_turn = turn;
+                drivebase.command_velocities(fwd, correction);
+                last_turn = correction;
                 last_fwd = fwd;
 
                 prev_fwd_error = fwd_error;
@@ -448,8 +449,7 @@ namespace chromatic {
             if (in_motion) return to_deg(true_error());
             in_motion = true;
 
-            cache.override_heading(target_radians);
-            double amount = calculate_turn(localizer->get_pose().dir, cache.get_heading(), direction);
+            cache.set_heading(target_radians);
 
             bool ignore_direction = false;
 
@@ -522,7 +522,7 @@ namespace chromatic {
             }
 
             if (relative) {
-                cache.override_pos(localizer->get_pose().pos);
+                cache.set_pos(localizer->get_pose().pos);
             }
 
             in_motion = false;
@@ -538,6 +538,91 @@ namespace chromatic {
             Vec cur_pos = localizer->get_pose().pos;
             double facing_heading = wrap_angle(to_deg((target - cur_pos).angle()) + (face==FACE::BACK ? 180 : 0), false);
             return turn_to(facing_heading, timeout, move_type, false, chainer, direction);
+        }
+
+        double swing_to(double heading_deg, DIR direction, ms timeout = -1, Exit move_type = Exit::LOOSE) {
+            const double target_radians = to_rad(heading_deg);
+
+
+            auto true_error = [&] {
+                return calculate_turn(localizer->get_pose().dir,target_radians);
+            };
+            if (in_motion) return to_deg(true_error());
+            if (calculate_turn(to_rad(cache.get_heading()), to_rad(heading_deg)) == 0) return 0;
+            in_motion = true;
+
+            // fix a direction of turning first
+            DIR fixed_direction = direction;
+            if (direction == DIR::EITHER) fixed_direction = to_bearing(target_radians) > 0 ? DIR::LEFT : DIR::RIGHT;
+
+            Pose last_pose = cache.get_pose();
+            double last_head = to_rad(cache.get_heading());
+            double turn_amount = calculate_turn(last_head, target_radians, fixed_direction);
+            double arc_length = 0.5 * drivebase.track_width * turn_amount;
+            Vec target_pos = last_pose.pos + Odometry::draw_arc(last_head, arc_length, turn_amount);
+            Pose target = Pose{target_pos, target_radians};
+            cache.set_pose(target);
+
+            bool ignore_direction = false;
+
+            swing_pid.set_timeout(timeout);
+
+            swing_pid.reset();
+            swing_slew.ready(last_turn);
+
+            auto get_error = [&] {
+
+                // if we're close enough to ignore the direction
+                if (swing_pid.get_loose_sc().get_settling() && !ignore_direction) ignore_direction = true;
+
+                double error = calculate_turn(
+                    localizer->get_pose().dir,
+                    cache.get_heading(),
+                    DIR::EITHER
+                );
+
+                return error;
+            };
+
+            double prev_error = 0;
+            while (!swing_pid.done(move_type == Exit::TIGHT) && in_motion) {
+
+                // error calculations
+                double error = get_error();
+
+                // pid & slew
+                double swing = swing_pid.compute(error);
+                swing = swing_slew.update(swing);
+
+                // early exit
+                if (move_type == Exit::MONO) {
+                    bool progress_condition = signflip(error, prev_error);
+                    bool in_bounds = swing_pid.get_loose_sc().get_settling();
+
+                    if (progress_condition && in_bounds) {
+                        in_motion = false;
+                        drivebase.brake();
+                        return to_deg(true_error());
+                    }
+                }
+
+                //actuation
+                if (fixed_direction == DIR::LEFT) drivebase.command_right_only(swing, true);
+                else drivebase.command_left_only(-swing, true);
+                drivebase.command_brake(fixed_direction);
+
+                prev_error = error;
+                delay_for(pollrate);
+            }
+
+            double final_error = true_error();
+            if (move_type != Exit::MONO) {
+                drivebase.brake(true);
+            }
+
+            in_motion = false;
+            return to_deg(final_error);
+
         }
     };
 }

@@ -3,6 +3,11 @@
 using namespace chromatic;
 using Exit = MotionController::Exit;
 
+void knock_in(double speed, MotionController &pilot) {
+    pilot.move_by(8, 500, Exit::MONO, speed);
+    pilot.move_by(-8, 500, Exit::MONO, speed);
+}
+
 // please provide the stuff to use
 void drive_test(MotionController &pilot) {
     ms prev = now();
@@ -50,15 +55,6 @@ void circle_drive(MotionController &pilot) {
 }
 
 void left_both(MotionController &pilot) {
-    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
-    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
-    const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
-    const MotionController::Chain DRIVE_TO_CCW =  {5, 10, 0, to_rad(90)};
-
-    auto knock_in = [&](double speed) {
-        pilot.move_by(10, 500, Exit::MONO, speed);
-        pilot.move_by(-10, 500, Exit::MONO, speed);
-    };
 
     const double imove_dx = 20.5 + 14.5 * cos(PI/6);
     const double imove_dy = 14.5 * sin(PI/6);
@@ -90,31 +86,20 @@ void left_both(MotionController &pilot) {
     body_state = Body::M_REFRESH;
     delay_for(250);
     body_state = Body::S_FULL;
-    delay_for(1400);
-    knock_in(50);
-    pilot.move_by(13, 1000, Exit::MONO, -1, DRIVE_TO_CW);
-    pilot.turn_to(135, 1000, Exit::LOOSE, false);
-    loader_state = Pneumatic::RETRACTED;
-    pilot.move_by(-10.7*sqrt(2), 1000, Exit::TIGHT, -1);
-    pilot.turn_to(180, 600, Exit::LOOSE, false, TURN_TO_BACK);
+    delay_for(1000);
+
+    pilot.move_by(5, 500, Exit::MONO);
+    pilot.swing_to(270, DIR::LEFT, 1000, Exit::MONO);
+    pilot.swing_to(175, DIR::RIGHT, 1000, Exit::MONO);
     hook_state = Pneumatic::RETRACTED;
-    pilot.move_by(-16, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
-    pilot.turn_to(150, 1000);
+    pilot.move_by(-7, 1000, Exit::LOOSE);
+    pilot.turn_to(140, 1000);
+    pilot.override_brake();
 }
 
 void right_both(MotionController &pilot) {
-    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
-    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
-    const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
-    const MotionController::Chain DRIVE_TO_CCW =  {5, 10, 0, to_rad(90)};
 
-
-    auto knock_in = [&](double speed) {
-        pilot.move_by(8, 500, Exit::MONO, speed);
-        pilot.move_by(-8, 500, Exit::MONO, speed);
-    };
-
-    const double imove_dx = 20.5 + 14.5 * cos(PI/6);
+    const double imove_dx = 18.5 + 14.5 * cos(PI/6);
     const double imove_dy = 14.5 * sin(PI/6);
 
     double imove_L = 21.5;
@@ -126,6 +111,7 @@ void right_both(MotionController &pilot) {
     pilot.turn_to(360-imove_angle, 800, Exit::LOOSE, false, TURN_TO_FWD);
     loader_state = Pneumatic::EXTENDED;
     pilot.move_by(imove_reset, 2000, Exit::LOOSE, 40, DRIVE_TO_CW);
+    body_state = Body::NOTHING;
     loader_state = Pneumatic::RETRACTED;
 
     pilot.turn_to(45, 1000, Exit::TIGHT, false);
@@ -139,34 +125,20 @@ void right_both(MotionController &pilot) {
     loader_state = Pneumatic::EXTENDED;
     pilot.turn_to(180, 2000, Exit::LOOSE);
     pilot.move_by(14, 1000);
-    // delay_for(400);
     pilot.move_by(-34, 1000);
     body_state = Body::M_REFRESH;
     delay_for(300);
     body_state = Body::S_FULL;
     delay_for(1500);
-    knock_in(40);
-    body_state = Body::NOTHING;
-    pilot.move_by(13, 1000, Exit::MONO, -1, DRIVE_TO_CW);
-    pilot.turn_to(135, 1000, Exit::LOOSE, false, TURN_TO_BACK);
-    pilot.move_by(-10.5*sqrt(2), 1000, Exit::LOOSE, -1);
-    pilot.turn_to(180, 1000, Exit::LOOSE, false, TURN_TO_BACK);
-    hook_state = Pneumatic::RETRACTED;
     loader_state = Pneumatic::RETRACTED;
-    pilot.move_by(-16, 1000, Exit::LOOSE, -1, DRIVE_TO_CW);
-    pilot.turn_to(150, 1000);
+    body_state = Body::NOTHING;
+    pilot.swing_to(270, DIR::LEFT, 1000, Exit::MONO);
+    pilot.swing_to(175, DIR::RIGHT, 1000, Exit::MONO);
+    hook_state = Pneumatic::RETRACTED;
+    pilot.move_by(-7, 800, Exit::LOOSE);
+    pilot.override_brake(true);
 }
 void right_rush(MotionController &pilot) {
-    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 30, 0};
-    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
-    const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-90)}; // revert to ±30 if this is too much
-    const MotionController::Chain DRIVE_TO_CCW =  {5, 10, 0, to_rad(90)};
-
-
-    auto knock_in = [&](double speed) {
-        pilot.move_by(8, 500, Exit::MONO, speed);
-        pilot.move_by(-8, 500, Exit::MONO, speed);
-    };
 
     const double imove_dx = 20.5 + 14.5 * cos(PI/6);
     const double imove_dy = 14.5 * sin(PI/6);
@@ -192,7 +164,7 @@ void right_rush(MotionController &pilot) {
     delay_for(200);
     body_state = Body::S_FULL;
     delay_for(1500);
-    // knock_in(40);
+
     body_state = Body::NOTHING;
     pilot.move_by(12, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     pilot.turn_to(135, 1000, Exit::LOOSE, false, TURN_TO_BACK);
@@ -204,17 +176,6 @@ void right_rush(MotionController &pilot) {
 }
 
 void solo(MotionController &pilot) {
-
-    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 50, 0};
-    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
-    const MotionController::Chain DRIVE_TO_CW =  {5, 20, 0, to_rad(-60)};
-    const MotionController::Chain DRIVE_TO_CCW =  {5, 20, 0, to_rad(60)};
-    const MotionController::Chain SUSF = {15, 40, 40, 0};
-    const MotionController::Chain SUSB = {15, 40, -40, 0};
-    const MotionController::Chain FWD_SLOWDOWN = {15, 40, 10, 0};
-    const MotionController::Chain BACK_SLOWDOWN = {15, 40, -10, 0};
-    const MotionController::Chain BFWD = {5, 40, -50, 0};
-    const MotionController::Chain FBACK = {5, 40, -50, 0};
 
     pilot.move_by(32, 1000, Exit::MONO, -1, DRIVE_TO_CW);
     loader_state = Pneumatic::EXTENDED;
@@ -267,16 +228,6 @@ void skills(MotionController &pilot) {
         body_state = Body::PREP_SCORE;
     };
 
-    auto knock_in = [&](double speed) {
-        pilot.move_by(10, 500, Exit::MONO, speed);
-        pilot.move_by(-10, 500, Exit::MONO, speed);
-    };
-
-    const MotionController::Chain TURN_TO_FWD = {to_rad(15), to_rad(50), 50, 0};
-    const MotionController::Chain TURN_TO_BACK = {to_rad(15), to_rad(50), -50, 0};
-    const MotionController::Chain DRIVE_TO_CW =  {5, 10, 0, to_rad(-60)};
-    const MotionController::Chain DRIVE_TO_CCW =  {5, 10, 0, to_rad(60)};
-
     pilot.move_by(31, 1000, Exit::MONO, -1, DRIVE_TO_CW);
 
     loader_state = Pneumatic::EXTENDED;
@@ -305,7 +256,7 @@ void skills(MotionController &pilot) {
     score_then_store(1500);
     score_then_store(1300);
     loader_state = Pneumatic::RETRACTED;
-    knock_in(20);
+    knock_in(20, pilot);
 
     pilot.move_by(16, 2000, Exit::MONO, -1, DRIVE_TO_CCW);
     pilot.turn_to(180, 1000, Exit::MONO, false);
@@ -337,7 +288,7 @@ void skills(MotionController &pilot) {
     score_then_store(1500);
     score_then_store(1300);
     loader_state = Pneumatic::RETRACTED;
-    knock_in(20);
+    knock_in(20, pilot);
 
     pilot.move_by(15, 2000, Exit::MONO, -1);
     pilot.turn_to(0, 1500, Exit::MONO);

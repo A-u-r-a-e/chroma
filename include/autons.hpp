@@ -13,7 +13,11 @@ void turn_test(chromatic::MotionController &pilot);
 
 void circle_drive(chromatic::MotionController &pilot);
 
+void tune(chromatic::MotionController& pilot);
+
 void left_both(chromatic::MotionController &pilot);
+
+void left_rush(chromatic::MotionController &pilot);
 
 void right_both(chromatic::MotionController &pilot);
 
@@ -21,4 +25,8 @@ void right_rush(chromatic::MotionController &pilot);
 
 void solo(chromatic::MotionController &pilot);
 
+void old_skills(chromatic::MotionController &pilot);
+
 void skills(chromatic::MotionController &pilot);
+
+void new_skills(chromatic::MotionController &pilot);

@@ -127,6 +127,10 @@ namespace chromatic {
                 D = (error - prev_error) / dt;
                 D = std::clamp(kD * D, -max_damp, max_damp);
             }
+            if (signflip(P, D)) { // this is to ensure P term is not dead
+                D = std::clamp(D, -fabs(P), fabs(P));
+            }
+
 
             double output = P + I + D;
             output = std::clamp(output, -max_output, max_output);

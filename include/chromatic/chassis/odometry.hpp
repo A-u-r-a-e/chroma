@@ -98,5 +98,19 @@ namespace chromatic {
         void stop_loop() {
             active = false;
         }
+
+        // override the x value
+        void override_x(double new_x) {
+            Pose cur = this->get_pose();
+            cur.pos.x = new_x;
+            this->set_pose(cur);
+        }
+
+        // override the yvalue
+        void override_y(double new_y) {
+            Pose cur = this->get_pose();
+            cur.pos.y = new_y;
+            this->set_pose(cur);
+        }
     };
 }

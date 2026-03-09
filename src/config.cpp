@@ -58,9 +58,9 @@ std::unique_ptr<Odometry> localizer(new EncodersIMU(drivebase, inertial));
 
 FieldWalls walls{71, 71, 71, 71};
 std::vector<FieldElementBox> elements =  {
-    FieldElementBox{-25, 25, 43, 51}, // 90º long goal
-    FieldElementBox{-25, 25, -51, -43}, // 270º long goal
-    FieldElementBox{-10, 10, -10, 10}, // center goals
+    // FieldElementBox{-25, 25, 43, 51}, // 90º long goal
+    // FieldElementBox{-25, 25, -51, -43}, // 270º long goal
+    // FieldElementBox{-10, 10, -10, 10}, // center goals
     FieldElementBox{walls.right - 5, walls.right, 44.5, 49.5}, // 45º loader
     FieldElementBox{walls.left, walls.left + 5, 44.5, 49.5}, // 135º loader
     FieldElementBox{walls.left, walls.left + 5, -49.5, -44.5}, // 225º loader
@@ -68,7 +68,8 @@ std::vector<FieldElementBox> elements =  {
 };
 
 
-DoubleTOF front_lidar(tof_lfront, tof_rfront, 5.0, 5.5);
+DoubleTOF front_lidar(tof_lfront, tof_rfront,
+    5.0, 5.5);
 SingleTOF left_lidar(tof_left, 3.8);
 SingleTOF right_lidar(tof_right, 3.8);
 
@@ -88,10 +89,10 @@ PID turn_pid(
 );
 
 PID head_pid(
-    10.8, 2.96, 0.69, to_rad(30),
+    5.5, 0, 3.65, to_rad(0),
     SettleCondition(to_rad(1), 50),
     SettleCondition(to_rad(2), 100),
-    2*PI, 2*PI, 2.5*PI
+    2*PI, 2.5*PI, 2.5*PI
 );
 
 PID swing_pid(

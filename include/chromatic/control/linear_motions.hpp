@@ -7,6 +7,7 @@
 #include "chromatic/chassis.hpp"
 #include "chromatic/control/pid.hpp"
 #include "chromatic/control/cubicspline.hpp"
+#include "pros/llemu.hpp"
 #include <algorithm>
 #include <memory>
 
@@ -99,6 +100,10 @@ namespace chromatic {
         // ready the cache for movements
         void refresh_cache() {
             cache.set_pose(localizer->get_pose());
+        }
+
+        void set_cache(Pose pose) {
+            cache.set_pose(pose);
         }
 
         // set pollrate/tickrate
@@ -229,11 +234,14 @@ namespace chromatic {
 
             auto get_head_error = [&] {
                 Pose cur_pose = localizer->get_pose();
-                double target_facing = (target_pose.pos - cur_pose.pos).angle();
+
+                double bearing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
-                if (amount < 0) target_facing = wrap_angle(target_facing + PI);
-                double head_error = calculate_turn(cur_pose.dir, target_facing);
-                return head_error;
+                if (amount < 0) bearing = wrap_angle(bearing + PI);
+                double head_error = calculate_turn(cur_pose.dir, bearing);
+                // double cte_correction = calculate_turn(target_pose.dir, bearing); // cross track correction
+                double cte_correction = 0;
+                return head_error + cte_correction;
             };
 
             auto get_absolute_error = [&] {
@@ -319,16 +327,15 @@ namespace chromatic {
         // mono_move ensures motor commands are uni-directional near settle by exiting the function once the robot overshoots and lies within settle range
         // chainer allows for motion chaining. range in inches, min_speed in inches/sec, and some default configuration available as well
         // this function will cause the cache, which ensures your movement direction, to be the straight line between the current cache point and the target
-        double move_to(Vec target, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}) {
+        double move_to(Pose target_pose, FACE facing = FACE::FWD, ms timeout = -1, double max_speed = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}) {
 
-            this->face_to(target, facing, 1000, Exit::MONO, {to_deg(30), to_deg(30), static_cast<double>(facing) * max_speed, 0});
+            Vec target = target_pose.pos;
 
             const bool do_chain = chainer.range > 0;
             if (in_motion) return mag(target - localizer->get_pose().pos);
             in_motion = true;
 
-            cache.set_pos(target);
-            Pose target_pose = cache.get_pose();
+            cache.set_pose(target_pose);
 
             fwd_pid.set_timeout(timeout);
             head_pid.set_timeout(timeout);
@@ -348,11 +355,13 @@ namespace chromatic {
 
             auto get_head_error = [&] {
                 Pose cur_pose = localizer->get_pose();
-                double target_facing = (target_pose.pos - cur_pose.pos).angle();
+                double bearing = (target_pose.pos - cur_pose.pos).angle();
                 // if we're moving backwards we want to face away
-                if (facing == FACE::BACK) target_facing = wrap_angle(target_facing + PI);
-                double turn_error = calculate_turn(cur_pose.dir, target_facing);
-                return turn_error;
+                if (facing == FACE::BACK) bearing = wrap_angle(bearing + PI);
+                double head_error = calculate_turn(cur_pose.dir, bearing);
+                double cte_correction = calculate_turn(target_pose.dir, bearing); // cross track correction
+
+                return head_error+cte_correction;
             };
 
             auto get_absolute_error = [&] {
@@ -478,6 +487,8 @@ namespace chromatic {
                 // error calculations
                 double error = get_error();
 
+                std::cout << to_deg(error) << " " << to_deg(localizer->get_pose().dir) << std::endl;
+
                 // pid & slew
                 double turn = turn_pid.compute(error);
                 double fwd = 0;
@@ -543,7 +554,6 @@ namespace chromatic {
         double swing_to(double heading_deg, DIR direction, ms timeout = -1, Exit move_type = Exit::LOOSE) {
             const double target_radians = to_rad(heading_deg);
 
-
             auto true_error = [&] {
                 return calculate_turn(localizer->get_pose().dir,target_radians);
             };
@@ -556,10 +566,10 @@ namespace chromatic {
             if (direction == DIR::EITHER) fixed_direction = to_bearing(target_radians) > 0 ? DIR::LEFT : DIR::RIGHT;
 
             Pose last_pose = cache.get_pose();
-            double last_head = to_rad(cache.get_heading());
-            double turn_amount = calculate_turn(last_head, target_radians, fixed_direction);
-            double arc_length = 0.5 * drivebase.track_width * turn_amount;
-            Vec target_pos = last_pose.pos + Odometry::draw_arc(last_head, arc_length, turn_amount);
+            double turn_amount = fixed_direction == DIR::LEFT ? wrap_angle(target_radians - last_pose.dir, true) : -wrap_angle(last_pose.dir - target_radians, true);
+            pros::lcd::print(2, "%f, ss %f", turn_amount, last_pose.dir);
+            double arc_length = 0.5 * (2+drivebase.track_width) * fabs(turn_amount);
+            Vec target_pos = last_pose.pos + Odometry::draw_arc(to_deg(last_pose.dir), arc_length, to_deg(turn_amount));
             Pose target = Pose{target_pos, target_radians};
             cache.set_pose(target);
 
@@ -620,9 +630,33 @@ namespace chromatic {
                 drivebase.brake(true);
             }
 
+            last_fwd = 0;
+            last_turn = 0;
+
             in_motion = false;
             return to_deg(final_error);
 
         }
+
+        /*
+        double boomerang_to(Pose target, FACE dir = FACE::FWD, ms timeout = -1, Exit move_type = Exit::LOOSE, Chain chainer = Chain{}) {
+            const bool do_chain = chainer.range > 0;
+            if (in_motion) return mag(target.pos - localizer->get_pose().pos);
+            in_motion = true;
+
+            cache.set_pos(target);
+            Pose target_pose = cache.get_pose();
+
+            fwd_pid.set_timeout(timeout);
+            head_pid.set_timeout(timeout);
+
+            fwd_pid.reset();
+            head_pid.reset();
+
+            // support for motion chaining
+            fwd_slew.ready(last_fwd);
+            head_slew.ready(last_turn);
+        }
+         */
     };
 }

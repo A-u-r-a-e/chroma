@@ -3,7 +3,7 @@
 #include "chromatic.hpp"
 #include "config.hpp"
 
-enum struct Body{NOTHING, I_ONLY, I_STORAGE, E_FULL, S_MIDDLE, S_LOW, S_FULL, M_REFRESH, PREP_SCORE};
+enum struct Body{NOTHING, I_ONLY, I_STORAGE, E_FULL, S_MIDDLE, S_LOW, S_FULL, M_REFRESH, DOWN_TOP, SLOW_STORAGE, PREP_SCORE};
 enum struct Pneumatic{RETRACTED, EXTENDED};
 
 extern std::atomic<Body> body_state;

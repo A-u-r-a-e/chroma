@@ -21,7 +21,7 @@ namespace chromatic {
             if (fabs(offset_deg_ccw) >= 90) return -1;
             double theta_rad = to_rad(offset_deg_ccw);
 
-            double true_dist = sensor.get_denoised();
+            double true_dist = sensor.get_top();
             if (true_dist < 0) return -1;
 
             true_dist += tan(theta_rad) * offset;
@@ -52,8 +52,8 @@ namespace chromatic {
 
         // gets the relative angle from perpendicular (l=r), -1 if reading errors
         double find_offset_deg_ccw() {
-            double l_raw = left.get_denoised();
-            double r_raw = right.get_denoised();
+            double l_raw = left.get_top();
+            double r_raw = right.get_top();
             if (l_raw < 0 || r_raw < 0) return -1;
 
             double sensor_difference = l_raw - r_raw;
